@@ -1,70 +1,68 @@
-### **Technical Implementation Guide: Creating an Authentication-Aware Landing Page**
-
-**Objective:** To refactor the existing static landing page (`HomePage`) so that it dynamically changes its content based on the user's authentication status. The primary changes will occur in the main header and all major call-to-action (CTA) buttons.
-
-**Core Technical Pattern:** The logic will be driven by a server-side session check. The main `HomePage` Server Component will fetch the user's session using `await auth()`. It will then pass the session data down as props to its children or use conditional rendering to display the appropriate UI. This approach ensures the page remains a fast-loading Server Component while delegating interactive elements to small, isolated Client Components.
+Here are my recommendations for cleaning and optimizing the `HomePage`.
 
 ---
 
-### **Task 1: Create the Interactive `UserNav` Component**
+### **1. Abstract the Repetitive Call-to-Action (CTA) Logic**
 
-This is a new, interactive component for authenticated users.
+- **Observation:** The core conditional logic block is repeated four times:
+  ```jsx
+  {
+    session ? (
+      <Link href="/dashboard">
+        <PrimaryButton>...</PrimaryButton>
+      </Link>
+    ) : (
+      <AuthModal trigger={<PrimaryButton>...</PrimaryButton>}>
+        <LoginButton />
+      </AuthModal>
+    );
+  }
+  ```
+- **Best Practice Violation:** This is a clear violation of the **DRY (Don't Repeat Yourself)** principle. If we ever need to change the logic (e.g., change the dashboard URL, add an analytics event, or modify the `AuthModal` behavior), we would have to do it in four separate places, which is error-prone and inefficient.
+- **Recommendation:** Create a new, reusable **Server Component** whose single responsibility is to render the correct call-to-action based on the session status. This new component will encapsulate the conditional logic perfectly.
 
-- **File Path:** `src/components/features/auth/user-nav.jsx`
-- **Component Type:** **Client Component**. The file _must_ start with the `'use client';` directive.
-- **Purpose:** To display the logged-in user's avatar and provide a dropdown menu with user-specific actions, such as signing out.
-- **Props (API):**
-  - `user`: Expects an object representing the authenticated user, containing at least `name` and `image` properties (e.g., `{ name: 'Aziz', image: 'url-to-image' }`).
-- **Composition & Structure:**
-  - This component will be built using the `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuLabel`, `DropdownMenuSeparator`, and `DropdownMenuItem` components from `shadcn/ui`.
-  - The `DropdownMenuTrigger` should contain the `Avatar` component (also from `shadcn/ui`).
-  - The `Avatar` component should contain an `AvatarImage` with its `src` set to the `user.image` prop and an `AvatarFallback` that displays the user's initials (e.g., "AZ").
-  - The `DropdownMenuContent` should contain:
-    1.  A `DropdownMenuLabel` to show the user's name.
-    2.  A `DropdownMenuSeparator`.
-    3.  A `DropdownMenuItem` for "Dashboard". This should wrap a `next/link` component pointing to `/dashboard`.
-    4.  Another `DropdownMenuItem` for "Sign Out". This will be a button element.
-- **Logic & Interactivity:**
-  - Import the `signOut` function from `next-auth/react`.
-  - The "Sign Out" `DropdownMenuItem` must have an `onClick` event handler that calls the `signOut()` function. No callback URL is needed if the default behavior (redirect to the current page) is acceptable.
+#### **Technical Instruction for Claude AI:**
+
+1.  **Create a new component file:** `src/components/features/auth/dynamic-cta-button.jsx`.
+2.  **Make it a Server Component:** It will not use the `'use client'` directive.
+3.  **Define its Props (API):**
+    - `session`: It will accept the `session` object.
+    - It must accept all other props that a standard button would, such as `className` and `children`. Use the spread syntax (`...props`) to pass these through.
+4.  **Implement the Logic:**
+    - Inside this component, implement the `session ? ... : ...` ternary logic.
+    - The **"logged in"** branch should render a `Link` component pointing to `/dashboard`, wrapping a `PrimaryButton`. The button should receive the `children` and any other passed props.
+    - The **"logged out"** branch should render the `AuthModal`. The `trigger` for the modal will be a `PrimaryButton` that also receives the `children` and other props. The child of the `AuthModal` will be the `LoginButton`.
+5.  **Refactor `HomePage`:** Replace all four instances of the repetitive logic block with this new component, like so:
+
+    ```jsx
+    // In the Hero section
+    <DynamicCtaButton session={session} className="text-lg px-8 py-6">
+      Start Free Trial
+    </DynamicCtaButton>
+
+    // In the Pricing Card
+    <DynamicCtaButton session={session} className="w-full">
+      Get Started
+    </DynamicCtaButton>
+    ```
 
 ---
 
-### **Task 2: Refactor `AppHeaderPublic` into a Generic `AppHeader`**
+### **2. Decouple Page Content from Layout (Data-Driven UI)**
 
-The existing header needs to be made smarter. It will now decide what to display based on the user's session.
+- **Observation:** The content for the `FeatureCard` and `PricingCard` components (titles, descriptions, features lists, icons) is hardcoded directly within the `HomePage.jsx` file.
+- **Best Practice Violation:** This violates the **Separation of Concerns** principle. The `HomePage` component's primary responsibility should be to orchestrate the page's layout and structure, not to hold static content. This makes the page harder to read and the content harder to update.
+- **Recommendation:** Move the static content for the landing page into a dedicated configuration file. Then, use the `.map()` function within `HomePage` to render the components dynamically from this data. This makes the `HomePage` component significantly cleaner and centralizes the content for easy management.
 
-- **File Path:** Rename `src/components/features/landing/app-header-public.jsx` to `src/components/features/landing/app-header.jsx`.
-- **Component Type:** Server Component.
-- **Purpose:** To serve as the application's main header, capable of displaying both unauthenticated and authenticated states.
-- **Props (API):**
-  - `session`: Expects the session object obtained from `await auth()`. It can be `null` if the user is not logged in.
-- **Composition & Structure:**
-  - The overall structure remains the same (a `<header>` tag with a container).
-  - In the right-hand navigation/action area, implement a **conditional (ternary) operator**.
-  - **Condition:** Check if `session?.user` exists.
-  - **If `true` (user is logged in):** Render the new `UserNav` component created in Task 1. Pass the `session.user` object to its `user` prop.
-  - **If `false` (user is not logged in):** Render the existing `AuthModal` component, configured with a `PrimaryButton` as its trigger and the `LoginButton` as its child.
+#### **Technical Instruction for Claude AI:**
 
----
+1.  **Create a new data file:** `src/lib/config/landing-page-config.js`.
+2.  **Define and Export Data Structures:** Inside this new file, create and export two constant arrays:
+    - `featureCardsData`: An array of objects. Each object should contain the props needed for a `FeatureCard`: `title`, `description`, and `icon` (you will need to import the icon components from `lucide-react` here).
+    - `pricingPlansData`: An array of objects. Each object should contain the props for a `PricingCard`: `planName`, `price`, `description`, `features` (as an array of strings), and a `recommended` boolean flag.
+3.  **Refactor `HomePage` to be Data-Driven:**
+    - Import the `featureCardsData` and `pricingPlansData` arrays into `HomePage.jsx`.
+    - In the "Features Section", remove the six hardcoded `FeatureCard` components. Replace them with a `.map()` call on the `featureCardsData` array, rendering one `<FeatureCard />` for each item in the array and passing the data as props. Remember to use the `key` prop in the map (e.g., `key={feature.title}`).
+    - In the "Pricing Section", do the same. Remove the three hardcoded `PricingCard` components and replace them with a `.map()` call on the `pricingPlansData` array.
 
-### **Task 3: Update the Main `HomePage` to Drive the Logic**
-
-This is the top-level orchestrator. It will fetch the session and pass it down to all relevant components.
-
-- **File Path:** `src/app/page.jsx`
-- **Component Type:** Server Component.
-- **Purpose:** To fetch the authentication status and control the content displayed on the landing page.
-- **Data Fetching & Logic:**
-  - At the very top of the `HomePage` function component, add the following line to get the session on the server: `const session = await auth();`.
-- **Composition & Structure Updates:**
-  1.  **Header:** Find the `AppHeaderPublic` component instance and rename it to `AppHeader`. Pass the `session` object you just fetched as a prop: `<AppHeader session={session} />`.
-  2.  **Hero Section CTA:** Locate the `AuthModal` instance in the hero section. Wrap it in a conditional check.
-      - If `session` is null, render the `AuthModal` as it is now.
-      - If `session` exists, render a `PrimaryButton` that contains a `next/link` component pointing to `/dashboard`. The button text should be "Go to Dashboard".
-  3.  **Pricing Section CTAs:** Repeat the same conditional logic for each of the three `PricingCard` components.
-      - If `session` is null, the `AuthModal` trigger buttons remain.
-      - If `session` exists, replace the `AuthModal` in each card with a `PrimaryButton` linking to `/dashboard`. You can vary the button style (e.g., primary vs. secondary) if desired, but the link should be consistent.
-  4.  **Final CTA Section:** Apply the same conditional logic to the final CTA at the bottom of the page, replacing the `AuthModal` with a link to the dashboard for logged-in users.
-
-By following these technical instructions, the landing page will become fully dynamic and responsive to the user's authentication state, providing a more intelligent and context-aware user experience, all while preserving the performance benefits of our Server Component architecture.
+By implementing these two recommendations, the `HomePage` component will be transformed from a long, repetitive file into a clean, professional, and highly maintainable orchestrator, perfectly aligning with our architectural goals.

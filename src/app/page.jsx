@@ -1,20 +1,14 @@
 import { auth } from "@/auth";
-import Link from "next/link";
 import AppHeader from "@/components/features/landing/app-header";
 import AppFooter from "@/components/features/landing/app-footer";
-import AuthModal from "@/components/features/auth/auth-modal";
-import LoginButton from "@/components/features/auth/login-button";
-import PrimaryButton from "@/components/ui/primary-button";
+import DynamicCtaButton from "@/components/features/auth/dynamic-cta-button";
+import DynamicSectionContent from "@/components/features/landing/dynamic-section-content";
 import FeatureCard from "@/components/ui/feature-card";
 import PricingCard from "@/components/ui/pricing-card";
 import {
-  BarChart3,
-  Package,
-  Receipt,
-  Users,
-  TrendingUp,
-  Shield,
-} from "lucide-react";
+  featureCardsData,
+  pricingPlansData,
+} from "@/lib/config/landing-page-config";
 
 /**
  * Main landing page for the Retail Inventory & Finance Manager application.
@@ -26,6 +20,7 @@ import {
 export default async function HomePage() {
   // Fetch the session on the server to determine authentication status
   const session = await auth();
+
   return (
     <div className="min-h-screen flex flex-col">
       <AppHeader session={session} />
@@ -44,23 +39,14 @@ export default async function HomePage() {
               designed specifically for retail shops in Uzbekistan.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {session ? (
-                <Link href="/dashboard">
-                  <PrimaryButton className="text-lg px-8 py-6">
-                    Go to Dashboard
-                  </PrimaryButton>
-                </Link>
-              ) : (
-                <AuthModal
-                  trigger={
-                    <PrimaryButton className="text-lg px-8 py-6">
-                      Start Free Trial
-                    </PrimaryButton>
-                  }
-                >
-                  <LoginButton />
-                </AuthModal>
-              )}
+              <DynamicCtaButton 
+                session={session} 
+                className="text-lg px-8 py-6"
+                context="hero"
+                authenticatedText="Access Your Dashboard"
+              >
+                Start Free Trial
+              </DynamicCtaButton>
             </div>
           </div>
         </section>
@@ -79,36 +65,14 @@ export default async function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <FeatureCard
-                icon={<Package className="h-8 w-8 text-primary" />}
-                title="Inventory Management"
-                description="Track stock levels, manage products, and get alerts when items are running low."
-              />
-              <FeatureCard
-                icon={<Receipt className="h-8 w-8 text-primary" />}
-                title="Sales Processing"
-                description="Fast, keyboard-friendly sales recording with flexible pricing and payment options."
-              />
-              <FeatureCard
-                icon={<BarChart3 className="h-8 w-8 text-primary" />}
-                title="Financial Reporting"
-                description="Comprehensive reports on sales, profits, and business performance."
-              />
-              <FeatureCard
-                icon={<Users className="h-8 w-8 text-primary" />}
-                title="Customer Management"
-                description="Track customer purchases, manage credit accounts, and build relationships."
-              />
-              <FeatureCard
-                icon={<TrendingUp className="h-8 w-8 text-primary" />}
-                title="Business Analytics"
-                description="Gain insights into your business with detailed analytics and trends."
-              />
-              <FeatureCard
-                icon={<Shield className="h-8 w-8 text-primary" />}
-                title="Secure & Reliable"
-                description="Your data is protected with enterprise-grade security and regular backups."
-              />
+              {featureCardsData.map((feature) => (
+                <FeatureCard
+                  key={feature.title}
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                />
+              ))}
             </div>
           </div>
         </section>
@@ -116,109 +80,28 @@ export default async function HomePage() {
         {/* Pricing Section */}
         <section id="pricing" className="py-16 md:py-24 bg-muted/20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Simple, Transparent Pricing
-              </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Choose the plan that fits your business needs. All plans include
-                core features.
-              </p>
-            </div>
+            <DynamicSectionContent session={session} section="pricing" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <PricingCard
-                planName="Basic"
-                price="Free"
-                description="Perfect for small shops getting started"
-                features={[
-                  "Up to 100 products",
-                  "Basic sales tracking",
-                  "Simple inventory management",
-                  "Email support",
-                ]}
-              >
-                {session ? (
-                  <Link href="/dashboard">
-                    <PrimaryButton className="w-full">
-                      Go to Dashboard
-                    </PrimaryButton>
-                  </Link>
-                ) : (
-                  <AuthModal
-                    trigger={
-                      <PrimaryButton className="w-full">
-                        Get Started
-                      </PrimaryButton>
-                    }
+              {pricingPlansData.map((plan) => (
+                <PricingCard
+                  key={plan.planName}
+                  planName={plan.planName}
+                  price={plan.price}
+                  description={plan.description}
+                  features={plan.features}
+                  recommended={plan.recommended}
+                >
+                  <DynamicCtaButton 
+                    session={session} 
+                    className="w-full"
+                    context="pricing"
+                    authenticatedText="Manage Shop"
                   >
-                    <LoginButton />
-                  </AuthModal>
-                )}
-              </PricingCard>
-
-              <PricingCard
-                planName="Standard"
-                price="$19/month"
-                description="Most popular choice for growing businesses"
-                features={[
-                  "Up to 1,000 products",
-                  "Advanced reporting",
-                  "Customer management",
-                  "Multi-user access",
-                  "Priority support",
-                ]}
-                recommended={true}
-              >
-                {session ? (
-                  <Link href="/dashboard">
-                    <PrimaryButton className="w-full">
-                      Go to Dashboard
-                    </PrimaryButton>
-                  </Link>
-                ) : (
-                  <AuthModal
-                    trigger={
-                      <PrimaryButton className="w-full">
-                        Start Free Trial
-                      </PrimaryButton>
-                    }
-                  >
-                    <LoginButton />
-                  </AuthModal>
-                )}
-              </PricingCard>
-
-              <PricingCard
-                planName="Premium"
-                price="$39/month"
-                description="For established shops with advanced needs"
-                features={[
-                  "Unlimited products",
-                  "Advanced analytics",
-                  "Custom integrations",
-                  "Dedicated support",
-                  "Custom training",
-                ]}
-              >
-                {session ? (
-                  <Link href="/dashboard">
-                    <PrimaryButton className="w-full">
-                      Go to Dashboard
-                    </PrimaryButton>
-                  </Link>
-                ) : (
-                  <AuthModal
-                    trigger={
-                      <PrimaryButton className="w-full">
-                        Start Free Trial
-                      </PrimaryButton>
-                    }
-                  >
-                    <LoginButton />
-                  </AuthModal>
-                )}
-              </PricingCard>
+                    {plan.ctaText}
+                  </DynamicCtaButton>
+                </PricingCard>
+              ))}
             </div>
           </div>
         </section>
@@ -226,30 +109,15 @@ export default async function HomePage() {
         {/* Final CTA Section */}
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to Transform Your Shop?
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join hundreds of shop owners who have already modernized their
-              operations with our comprehensive retail management solution.
-            </p>
-            {session ? (
-              <Link href="/dashboard">
-                <PrimaryButton className="text-lg px-8 py-6">
-                  Go to Dashboard
-                </PrimaryButton>
-              </Link>
-            ) : (
-              <AuthModal
-                trigger={
-                  <PrimaryButton className="text-lg px-8 py-6">
-                    Start Your Free Trial Today
-                  </PrimaryButton>
-                }
-              >
-                <LoginButton />
-              </AuthModal>
-            )}
+            <DynamicSectionContent session={session} section="cta" />
+            <DynamicCtaButton 
+              session={session} 
+              className="text-lg px-8 py-6"
+              context="cta"
+              authenticatedText="Continue to Dashboard"
+            >
+              Start Your Free Trial Today
+            </DynamicCtaButton>
           </div>
         </section>
       </main>
