@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS
+// Defines the user roles within the application.
+enum Role {
+  SHOP_OWNER
+  SHOP_STAFF
+}
+
+// Defines the available subscription plans.
+enum SubscriptionPlan {
+  FREE_TRIAL
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+// Defines the status of a subscription.
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+
+// MODELS
+
+// Represents a user account in the system, compatible with NextAuth.js.
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(SHOP_OWNER)
+
+  // A user can own one shop. This is a virtual field for Prisma Client.
+  // It does NOT define fields or references.
+  shop   Shop?
+
+  // NextAuth.js required relations
+  accounts Account[]
+  sessions Session[]
+}
+
+// NextAuth.js model for linking OAuth accounts to a User.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// NextAuth.js model for database-based sessions.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// NextAuth.js model for email verification tokens.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Represents a single retail shop, the central entity for an account.
+model Shop {
+  id   String @id @default(cuid())
+  name String
+
+  // This field holds the foreign key.
+  ownerId String @unique
+  // This relation field defines how 'ownerId' connects to the User model.
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+
+  // Each shop has one subscription.
+  subscription Subscription?
+
+  @@index([ownerId])
+}
+
+// Manages the subscription details for a Shop.
+model Subscription {
+  id        String             @id @default(cuid())
+  shopId    String             @unique
+  plan      SubscriptionPlan   @default(FREE_TRIAL)
+  status    SubscriptionStatus @default(TRIALING)
+  startDate DateTime           @default(now())
+  endDate   DateTime
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+}

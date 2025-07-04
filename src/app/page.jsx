@@ -1,101 +1,260 @@
-import Image from "next/image";
+import { auth } from "@/auth";
+import Link from "next/link";
+import AppHeader from "@/components/features/landing/app-header";
+import AppFooter from "@/components/features/landing/app-footer";
+import AuthModal from "@/components/features/auth/auth-modal";
+import LoginButton from "@/components/features/auth/login-button";
+import PrimaryButton from "@/components/ui/primary-button";
+import FeatureCard from "@/components/ui/feature-card";
+import PricingCard from "@/components/ui/pricing-card";
+import {
+  BarChart3,
+  Package,
+  Receipt,
+  Users,
+  TrendingUp,
+  Shield,
+} from "lucide-react";
 
-export default function Home() {
+/**
+ * Main landing page for the Retail Inventory & Finance Manager application.
+ * Dynamically adapts content based on user authentication status.
+ * Serves as the entry point for both unauthenticated and authenticated users.
+ *
+ * @returns {JSX.Element} Landing page
+ */
+export default async function HomePage() {
+  // Fetch the session on the server to determine authentication status
+  const session = await auth();
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen flex flex-col">
+      <AppHeader session={session} />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="bg-gradient-to-b from-background to-muted/20 py-16 md:py-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+              Take Control of Your{" "}
+              <span className="text-primary">Retail Shop</span>
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Replace manual paperwork with a modern, digital solution for
+              inventory management, sales tracking, and financial reporting
+              designed specifically for retail shops in Uzbekistan.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {session ? (
+                <Link href="/dashboard">
+                  <PrimaryButton className="text-lg px-8 py-6">
+                    Go to Dashboard
+                  </PrimaryButton>
+                </Link>
+              ) : (
+                <AuthModal
+                  trigger={
+                    <PrimaryButton className="text-lg px-8 py-6">
+                      Start Free Trial
+                    </PrimaryButton>
+                  }
+                >
+                  <LoginButton />
+                </AuthModal>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="py-16 md:py-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Everything You Need to Manage Your Shop
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Streamline your operations with powerful tools designed for
+                modern retail management.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <FeatureCard
+                icon={<Package className="h-8 w-8 text-primary" />}
+                title="Inventory Management"
+                description="Track stock levels, manage products, and get alerts when items are running low."
+              />
+              <FeatureCard
+                icon={<Receipt className="h-8 w-8 text-primary" />}
+                title="Sales Processing"
+                description="Fast, keyboard-friendly sales recording with flexible pricing and payment options."
+              />
+              <FeatureCard
+                icon={<BarChart3 className="h-8 w-8 text-primary" />}
+                title="Financial Reporting"
+                description="Comprehensive reports on sales, profits, and business performance."
+              />
+              <FeatureCard
+                icon={<Users className="h-8 w-8 text-primary" />}
+                title="Customer Management"
+                description="Track customer purchases, manage credit accounts, and build relationships."
+              />
+              <FeatureCard
+                icon={<TrendingUp className="h-8 w-8 text-primary" />}
+                title="Business Analytics"
+                description="Gain insights into your business with detailed analytics and trends."
+              />
+              <FeatureCard
+                icon={<Shield className="h-8 w-8 text-primary" />}
+                title="Secure & Reliable"
+                description="Your data is protected with enterprise-grade security and regular backups."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="py-16 md:py-24 bg-muted/20">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Simple, Transparent Pricing
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Choose the plan that fits your business needs. All plans include
+                core features.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              <PricingCard
+                planName="Basic"
+                price="Free"
+                description="Perfect for small shops getting started"
+                features={[
+                  "Up to 100 products",
+                  "Basic sales tracking",
+                  "Simple inventory management",
+                  "Email support",
+                ]}
+              >
+                {session ? (
+                  <Link href="/dashboard">
+                    <PrimaryButton className="w-full">
+                      Go to Dashboard
+                    </PrimaryButton>
+                  </Link>
+                ) : (
+                  <AuthModal
+                    trigger={
+                      <PrimaryButton className="w-full">
+                        Get Started
+                      </PrimaryButton>
+                    }
+                  >
+                    <LoginButton />
+                  </AuthModal>
+                )}
+              </PricingCard>
+
+              <PricingCard
+                planName="Standard"
+                price="$19/month"
+                description="Most popular choice for growing businesses"
+                features={[
+                  "Up to 1,000 products",
+                  "Advanced reporting",
+                  "Customer management",
+                  "Multi-user access",
+                  "Priority support",
+                ]}
+                recommended={true}
+              >
+                {session ? (
+                  <Link href="/dashboard">
+                    <PrimaryButton className="w-full">
+                      Go to Dashboard
+                    </PrimaryButton>
+                  </Link>
+                ) : (
+                  <AuthModal
+                    trigger={
+                      <PrimaryButton className="w-full">
+                        Start Free Trial
+                      </PrimaryButton>
+                    }
+                  >
+                    <LoginButton />
+                  </AuthModal>
+                )}
+              </PricingCard>
+
+              <PricingCard
+                planName="Premium"
+                price="$39/month"
+                description="For established shops with advanced needs"
+                features={[
+                  "Unlimited products",
+                  "Advanced analytics",
+                  "Custom integrations",
+                  "Dedicated support",
+                  "Custom training",
+                ]}
+              >
+                {session ? (
+                  <Link href="/dashboard">
+                    <PrimaryButton className="w-full">
+                      Go to Dashboard
+                    </PrimaryButton>
+                  </Link>
+                ) : (
+                  <AuthModal
+                    trigger={
+                      <PrimaryButton className="w-full">
+                        Start Free Trial
+                      </PrimaryButton>
+                    }
+                  >
+                    <LoginButton />
+                  </AuthModal>
+                )}
+              </PricingCard>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA Section */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready to Transform Your Shop?
+            </h2>
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Join hundreds of shop owners who have already modernized their
+              operations with our comprehensive retail management solution.
+            </p>
+            {session ? (
+              <Link href="/dashboard">
+                <PrimaryButton className="text-lg px-8 py-6">
+                  Go to Dashboard
+                </PrimaryButton>
+              </Link>
+            ) : (
+              <AuthModal
+                trigger={
+                  <PrimaryButton className="text-lg px-8 py-6">
+                    Start Your Free Trial Today
+                  </PrimaryButton>
+                }
+              >
+                <LoginButton />
+              </AuthModal>
+            )}
+          </div>
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      <AppFooter />
     </div>
   );
 }

@@ -1,3 +1,6 @@
+<!-- Guide 5: Application Performance Optimization: Best Practices -->
+<!-- filepath: d:\web development\2025\codevision works\inventory-management-app\inventory-nextjs-copilot-pro-chat-mode-4\instructions\Technical-Guides\guide-5-app-performance-guide.md -->
+
 **Guide Document 5: Application Performance Optimization: Best Practices (JavaScript + JSDoc Edition)**
 
 **Version:** 1.0
@@ -61,18 +64,33 @@ return (
   ```
 
 - **Caching:**
+
   - **Next.js `fetch` Caching:** The native `fetch` API is automatically extended by Next.js to cache requests. By default, fetches are cached indefinitely.
   - **AI Action:** For data that changes, use the `revalidate` option.
+
   ```javascript
   // Fetch data and revalidate at most every 60 seconds
   fetch("https://...", { next: { revalidate: 60 } });
   ```
+
   - **AI Action:** For highly dynamic data that should never be cached, use `cache: 'no-store'`.
+
   ```javascript
   // Fetch data on every request
   fetch("https://...", { cache: "no-store" });
   ```
+
   - **Database Queries (Prisma):** Prisma queries are not automatically cached by `fetch`. If you need to cache database results, wrap the query in a utility function that uses `React.cache` (for per-request memoization) or a more advanced caching strategy if needed.
+
+- **Updated Pattern for Session-Specific Data:**
+
+  - For user/session-specific data, Server Components should call shared service/data functions directly (not via internal fetch to API routes).
+  - This avoids network overhead and ensures the freshest data.
+  - Use `fetch` with `cache: 'no-store'` only for public or non-session-specific data.
+
+- **AI Action:**
+  - Always prefer direct function calls for SSR of session-specific data.
+  - Use API routes only for client-driven fetches.
 
 **4. Client-Side Performance**
 
@@ -143,6 +161,9 @@ return (
 
 **8. AI Agent's Responsibility**
 
+- **Performance:**
+  - Use direct function calls for SSR of session-specific data for maximum performance.
+  - Only use internal fetch for public or non-session-specific data.
 - Default to creating Server Components.
 - Use `loading.jsx` for route-level loading states.
 - Implement parallel data fetching patterns in Server Components.

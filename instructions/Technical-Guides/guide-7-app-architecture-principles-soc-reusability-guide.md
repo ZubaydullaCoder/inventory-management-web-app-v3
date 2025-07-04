@@ -1,3 +1,6 @@
+<!-- Guide 7: Architectural Principles: SoC, Reusability & Modularity -->
+<!-- filepath: d:\web development\2025\codevision works\inventory-management-app\inventory-nextjs-copilot-pro-chat-mode-4\instructions\Technical-Guides\guide-7-app-architecture-principles-soc-reusability-guide.md -->
+
 **Guide Document 7: Architectural Principles: SoC, Reusability & Modularity (JavaScript + JSDoc Edition)**
 
 **Version:** 1.0
@@ -31,6 +34,18 @@ Each part of the application must have a single, distinct responsibility. This m
   - **Location:** `src/lib/services/` or `src/lib/data/`.
   - **Responsibility:** These modules contain the core logic. They take simple JavaScript objects as input, perform operations (e.g., Prisma queries), and return the result. They know nothing about HTTP.
   - **AI Action:** Do not place Prisma queries directly inside `route.js` files. Create a separate function in a `services` or `data` directory and call it from the route handler.
+
+  - **Pattern Update:**
+
+    - **Shared Service Function Pattern:**  
+      For any business/data logic that is needed by both Server Components and API routes, implement it as a reusable function in the service/data layer (e.g., `getDashboardCounts`).
+      - **Server Components** call this function directly for SSR.
+      - **API Routes** call the same function for client-driven requests.
+      - **Never** fetch your own API route from a Server Component for session-specific data.
+
+  - **AI Action:**
+    - Always create a shared function for logic needed by both server and client.
+    - Never duplicate business logic between API routes and Server Components.
 
 - **Client State vs. Server State:**
   - **Concern:** Asynchronous server data (fetching, caching, updating).
@@ -88,7 +103,9 @@ Build the application as a collection of independent, loosely coupled modules. A
 
 **5. AI Agent's Responsibility**
 
-- **Strict Adherence:** The AI must follow these architectural principles at all times.
+- **Strict Adherence:**
+  - Always use the "Shared Service Function" pattern for any logic needed by both server and client.
+  - Maintain a single source of truth for business/data logic.
 - **Structure First:** When tasked with a new feature, the AI should first propose the file and module structure based on these principles.
 - **Refactor for Clarity:** The AI should be able to identify code that violates these principles (e.g., a Prisma query in a `route.js` file) and refactor it into the correct structure.
 - **Default to Reusability:** When generating code, the AI should default to creating a reusable function or component rather than writing single-use logic inside a larger component.

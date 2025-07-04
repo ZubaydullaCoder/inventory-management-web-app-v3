@@ -1,7 +1,3 @@
-Excellent. I will now rewrite the first guide document based on the **JavaScript + JSDoc** stack. This approach provides type safety and clarity for the AI agent while allowing you to work in standard JavaScript files.
-
----
-
 **Guide Document 1: Modern Next.js: Core Principles, Patterns & Component Architecture (JavaScript + JSDoc Edition)**
 
 **Version:** 1.1
@@ -131,13 +127,33 @@ Push Client Components to the Leaves: Keep Client Components as small and focuse
 
 **8. Data Fetching Strategy**
 
-Primary Pattern (Hybrid Approach):
-Server Component Fetches Initial Data: The page.jsx Server Component will fetch the critical data for the initial page load. To enable server-side caching and reduce database load, it will do this by fetching from an internal API route.
-API Route Handles Database Logic: The API route (e.g., /api/products/route.js) contains the actual prisma query.
-Data is Passed as Props: The fetched data is passed as a prop to the Client Component.
-Client Component Hydrates TanStack Query: The Client Component uses useSuspenseQuery and receives the server-fetched data via the initialData option. This populates the client-side cache without needing a follow-up request.
-Client-Side Fetching (TanStack Query):
-Used for all subsequent data fetches triggered by user interaction (e.g., filtering, pagination) and for all data mutations (POST, PUT, DELETE).
+**Updated Hybrid Pattern: "Shared Service Function" Approach**
+
+- **Server Components (SSR):**  
+  For session-specific or user-specific data, Server Components should call a shared service/data function (e.g., `getDashboardCounts(userId)`) directly. This avoids unnecessary internal HTTP requests and leverages the session context already available on the server.
+
+  - **No fetch to internal API routes from Server Components for session-specific data.**
+  - **Benefit:** Maximum performance, security, and simplicity.
+
+- **API Route (for Client Components):**  
+  The same shared service/data function is called from the API route (e.g., `/api/dashboard/counts`). The API route is responsible for authentication and acts as the secure HTTP interface for client-side requests (e.g., TanStack Query, manual refresh, widgets).
+
+- **Client Components:**  
+  Use TanStack Query to fetch data from the API route. This enables client-driven updates, refetching, and cache management.
+
+**Summary Table:**
+
+| Context          | Pattern                                     |
+| ---------------- | ------------------------------------------- |
+| Server Component | Direct call to shared service/data function |
+| API Route        | Call shared service/data function           |
+| Client Component | Fetch via API route (TanStack Query/fetch)  |
+
+**Result:**
+
+- The core logic is written once and reused.
+- The server path is fast and secure.
+- The client path is decoupled and secure.
 
 **9. API Routes (`app/api/.../route.js`)**
 
