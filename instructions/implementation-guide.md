@@ -1,68 +1,120 @@
-Here are my recommendations for cleaning and optimizing the `HomePage`.
+Of course. Here are the descriptive technical instructions for the Claude AI model to implement Tasks 3.3 and 3.4. These instructions focus on component composition, prop drilling, and hook usage, leaving the specific UI and styling implementation to Claude's strengths.
 
 ---
 
-### **1. Abstract the Repetitive Call-to-Action (CTA) Logic**
+### **AI Agent (Claude) Task Instructions: Product "Cockpit" and `DataTable` UI**
 
-- **Observation:** The core conditional logic block is repeated four times:
-  ```jsx
-  {
-    session ? (
-      <Link href="/dashboard">
-        <PrimaryButton>...</PrimaryButton>
-      </Link>
-    ) : (
-      <AuthModal trigger={<PrimaryButton>...</PrimaryButton>}>
-        <LoginButton />
-      </AuthModal>
-    );
-  }
-  ```
-- **Best Practice Violation:** This is a clear violation of the **DRY (Don't Repeat Yourself)** principle. If we ever need to change the logic (e.g., change the dashboard URL, add an analytics event, or modify the `AuthModal` behavior), we would have to do it in four separate places, which is error-prone and inefficient.
-- **Recommendation:** Create a new, reusable **Server Component** whose single responsibility is to render the correct call-to-action based on the session status. This new component will encapsulate the conditional logic perfectly.
+**Objective:** To build the complete user interface for creating and viewing products, leveraging the hooks and components created in previous steps. This involves implementing the two-column "Cockpit" for bulk creation and the main `DataTable` for viewing the product list.
 
-#### **Technical Instruction for Claude AI:**
+### **Task 3.3: Build the "Cockpit" UI (`/new`)**
 
-1.  **Create a new component file:** `src/components/features/auth/dynamic-cta-button.jsx`.
-2.  **Make it a Server Component:** It will not use the `'use client'` directive.
-3.  **Define its Props (API):**
-    - `session`: It will accept the `session` object.
-    - It must accept all other props that a standard button would, such as `className` and `children`. Use the spread syntax (`...props`) to pass these through.
-4.  **Implement the Logic:**
-    - Inside this component, implement the `session ? ... : ...` ternary logic.
-    - The **"logged in"** branch should render a `Link` component pointing to `/dashboard`, wrapping a `PrimaryButton`. The button should receive the `children` and any other passed props.
-    - The **"logged out"** branch should render the `AuthModal`. The `trigger` for the modal will be a `PrimaryButton` that also receives the `children` and other props. The child of the `AuthModal` will be the `LoginButton`.
-5.  **Refactor `HomePage`:** Replace all four instances of the repetitive logic block with this new component, like so:
+**1. Create the Cockpit Page Component (The Orchestrator):**
 
-    ```jsx
-    // In the Hero section
-    <DynamicCtaButton session={session} className="text-lg px-8 py-6">
-      Start Free Trial
-    </DynamicCtaButton>
+- **File Path:** `src/app/(dashboard)/inventory/products/new/page.jsx`
+- **Component Type:** This **must** be a **React Server Component**.
+- **Primary Responsibility:** To set up the two-column layout and render the client-side components that provide the interactive experience.
 
-    // In the Pricing Card
-    <DynamicCtaButton session={session} className="w-full">
-      Get Started
-    </DynamicCtaButton>
-    ```
+- **Implementation Steps:**
+  1.  **Import Components:** Import `ProductForm` and `SessionCreationList` (which you will create next).
+  2.  **Structure the Layout:**
+      - Render a main container that creates a responsive two-column grid.
+      - In the left column, render the `<ProductForm />` component.
+      - In the right column, render the `<SessionCreationList />` component.
+
+**2. Create the Product Form Component:**
+
+- **File Path:** `src/components/features/products/product-form.jsx`
+- **Component Type:** This **must** be a **Client Component** (`'use client'`).
+- **Primary Responsibility:** To handle user input for a new product and trigger the creation mutation.
+
+- **Implementation Steps:**
+  1.  **Import Hooks and Components:**
+      - Import `useCreateProduct` from `src/hooks/use-products.js`.
+      - Import form-related `shadcn/ui` components (`Input`, `Label`, etc.) and `PrimaryButton`.
+  2.  **Instantiate the Mutation Hook:**
+      - Call `const createProductMutation = useCreateProduct();` at the top of the component.
+  3.  **Manage Form State:**
+      - Use `useState` to manage the state of each form input field (e.g., `name`, `sellingPrice`).
+  4.  **Implement the Submit Handler:**
+      - Create an `handleSubmit` function. This function will:
+        - Prevent the default form submission.
+        - Call `createProductMutation.mutate(...)`, passing it an object with the current form state.
+        - After calling `mutate`, reset all form state variables to their initial empty values.
+  5.  **Auto-focus on Mount:**
+      - Use `useRef` and `useEffect` with an empty dependency array `[]` to programmatically set focus on the "Product Name" input field when the component first renders.
+  6.  **Render the Form:**
+      - Render a `<form>` element with an `onSubmit` handler pointing to your `handleSubmit` function.
+      - Render all necessary input fields (`name`, `sellingPrice`, `purchasePrice`, etc.).
+      - Render a `PrimaryButton` with `type="submit"`. The button's text should be "Save and Add Another". Add a disabled state bound to `createProductMutation.isPending`.
+
+**3. Create the Session Creation List Component:**
+
+- **File Path:** `src/components/features/products/session-creation-list.jsx`
+- **Component Type:** This **must** be a **Client Component** (`'use client'`).
+- **Primary Responsibility:** To display the list of products being added in the current session, reflecting the optimistic updates from the form.
+
+- **Implementation Steps:**
+  1.  **Import Hooks:** Import `useGetProducts` from `src/hooks/use-products.js`.
+  2.  **Fetch Data from Cache:**
+      - Call `const { data } = useGetProducts({ page: 1, limit: 10 });`. TanStack Query will provide the data from the cache, which is being optimistically updated by the `ProductForm`.
+  3.  **Render the List:**
+      - Map over `data?.products` to render a list of the newly created items.
+      - For each item, display key information like the product name and price.
+      - Each item should have an "Edit" button. For now, this button can be a placeholder; its modal functionality will be implemented later.
+      - Handle the empty state: if `data?.products` is empty, display a message like "Products you add will appear here."
 
 ---
 
-### **2. Decouple Page Content from Layout (Data-Driven UI)**
+### **Task 3.4: Build the `DataTable` UI (`/products`)**
 
-- **Observation:** The content for the `FeatureCard` and `PricingCard` components (titles, descriptions, features lists, icons) is hardcoded directly within the `HomePage.jsx` file.
-- **Best Practice Violation:** This violates the **Separation of Concerns** principle. The `HomePage` component's primary responsibility should be to orchestrate the page's layout and structure, not to hold static content. This makes the page harder to read and the content harder to update.
-- **Recommendation:** Move the static content for the landing page into a dedicated configuration file. Then, use the `.map()` function within `HomePage` to render the components dynamically from this data. This makes the `HomePage` component significantly cleaner and centralizes the content for easy management.
+**1. Create the Column Definitions:**
 
-#### **Technical Instruction for Claude AI:**
+- **File Path:** `src/components/features/products/product-columns.jsx`
+- **Component Type:** This **must** be a **Client Component** (`'use client'`).
+- **Primary Responsibility:** To define the structure and rendering logic for the columns in the products `DataTable`.
 
-1.  **Create a new data file:** `src/lib/config/landing-page-config.js`.
-2.  **Define and Export Data Structures:** Inside this new file, create and export two constant arrays:
-    - `featureCardsData`: An array of objects. Each object should contain the props needed for a `FeatureCard`: `title`, `description`, and `icon` (you will need to import the icon components from `lucide-react` here).
-    - `pricingPlansData`: An array of objects. Each object should contain the props for a `PricingCard`: `planName`, `price`, `description`, `features` (as an array of strings), and a `recommended` boolean flag.
-3.  **Refactor `HomePage` to be Data-Driven:**
-    - Import the `featureCardsData` and `pricingPlansData` arrays into `HomePage.jsx`.
-    - In the "Features Section", remove the six hardcoded `FeatureCard` components. Replace them with a `.map()` call on the `featureCardsData` array, rendering one `<FeatureCard />` for each item in the array and passing the data as props. Remember to use the `key` prop in the map (e.g., `key={feature.title}`).
-    - In the "Pricing Section", do the same. Remove the three hardcoded `PricingCard` components and replace them with a `.map()` call on the `pricingPlansData` array.
+- **Implementation Steps:**
+  1.  **Export a `columns` Array:** This file's default export should be an array named `columns`.
+  2.  **Define Columns:** Create objects in the array for each column you want to display (e.g., "Name", "Selling Price", "Stock", "Category").
+      - Use the `accessorKey` property to link to the data field (e.g., `'name'`).
+      - Use the `header` property to define the column title.
+  3.  **Define the "Actions" Column:**
+      - Create a final column object for actions. It will not have an `accessorKey`.
+      - Use the `cell` property to render a function. This function should return JSX for the `shadcn/ui` `DropdownMenu`, containing "Edit" and "Delete" items.
 
-By implementing these two recommendations, the `HomePage` component will be transformed from a long, repetitive file into a clean, professional, and highly maintainable orchestrator, perfectly aligning with our architectural goals.
+**2. Create the Reusable `DataTable` Component:**
+
+- **File Path:** `src/components/ui/data-table.jsx`
+- **Component Type:** This **must** be a **Client Component** (`'use client'`).
+- **Primary Responsibility:** To provide a generic, reusable table component powered by TanStack Table v8.
+
+- **Implementation Steps:**
+  - Follow `guide-11-tanstack-table-v8-guide.md` and the official `shadcn/ui` `DataTable` example.
+  - The component must accept `columns` and `data` as props.
+  - Use the `useReactTable` hook to manage table state (sorting, filtering, pagination).
+  - Map over the `table` instance's state to render the `<thead>`, `<tbody>`, and pagination controls.
+
+**3. Create the Product List Page (Orchestrator):**
+
+- **File Path:** `src/app/(dashboard)/inventory/products/page.jsx`
+- **Component Type:** This **must** be a **React Server Component**.
+
+- **Implementation Steps:**
+  1.  **Import necessary components/functions:** `getProductsByShopId`, `ProductListClient`, and `Suspense`.
+  2.  **Fetch Initial Data:** Call `await getProductsByShopId(...)` to get the first page of products on the server.
+  3.  **Render with Suspense:**
+      - Render a `<Suspense>` boundary with a fallback (e.g., a `<TableSkeleton />`).
+      - Inside `Suspense`, render the `<ProductListClient />` component, passing the fetched data to an `initialData` prop.
+
+**4. Create the Product List Client Component:**
+
+- **File Path:** `src/components/features/products/product-list-client.jsx`
+- **Component Type:** This **must** be a **Client Component** (`'use client'`).
+
+- **Implementation Steps:**
+  1.  **Import hooks and components:** `useGetProducts`, `productColumns`, and `DataTable`.
+  2.  **Accept `initialData` Prop:** The component must accept the `initialData` prop from its parent Server Component.
+  3.  **Initialize Query:**
+      - Call `useGetProducts(...)`, passing the `initialData` to the `initialData` option of the `useQuery` hook. This will prevent a re-fetch on initial load.
+  4.  **Render the Table:**
+      - Render the `<DataTable />` component, passing `columns={productColumns}` and `data={data?.products || []}`.

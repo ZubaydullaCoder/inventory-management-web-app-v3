@@ -45,11 +45,8 @@ model User {
   image         String?
   role          Role      @default(SHOP_OWNER)
 
-  // A user can own one shop. This is a virtual field for Prisma Client.
-  // It does NOT define fields or references.
   shop   Shop?
 
-  // NextAuth.js required relations
   accounts Account[]
   sessions Session[]
 }
@@ -100,13 +97,16 @@ model Shop {
   id   String @id @default(cuid())
   name String
 
-  // This field holds the foreign key.
   ownerId String @unique
-  // This relation field defines how 'ownerId' connects to the User model.
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Restrict)
 
-  // Each shop has one subscription.
   subscription Subscription?
+
+  // One-to-many relations to core business models
+  products   Product[]
+  categories Category[]
+  suppliers  Supplier[]
+  customers  Customer[]
 
   @@index([ownerId])
 }
@@ -123,4 +123,78 @@ model Subscription {
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
+}
+
+// NEW CORE BUSINESS MODELS
+
+// Product categories defined by the shop owner.
+model Category {
+  id   String @id @default(cuid())
+  name String
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  products Product[]
+
+  @@index([shopId])
+}
+
+// Suppliers from whom products are purchased.
+model Supplier {
+  id            String  @id @default(cuid())
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  products Product[]
+
+  @@index([shopId])
+}
+
+// Customers who purchase products.
+model Customer {
+  id                 String  @id @default(cuid())
+  name               String
+  phone              String?
+  email              String?
+  address            String?
+  outstandingBalance Decimal @default(0)
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+}
+
+// The central model for all inventory items.
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  sku           String?  @unique
+  purchasePrice Decimal
+  sellingPrice  Decimal
+  stock         Int      @default(0)
+  reorderPoint  Int?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete:SetNull)
+
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete:SetNull)
+
+  @@index([shopId])
+  @@index([categoryId])
+  @@index([supplierId])
 }

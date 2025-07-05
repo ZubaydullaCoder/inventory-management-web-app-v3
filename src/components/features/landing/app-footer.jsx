@@ -9,17 +9,19 @@ export default function AppFooter() {
   return (
     <footer className="border-t bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Brand Section */}
+          <div className="md:col-span-2">
             <h3 className="text-lg font-semibold text-primary mb-4">
               RetailManager
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Modern inventory and finance management for retail shops in
-              Uzbekistan.
+            <p className="text-sm text-muted-foreground max-w-md">
+              Modern inventory and finance management solution designed
+              specifically for retail shops in Uzbekistan.
             </p>
           </div>
 
+          {/* Product Links */}
           <div>
             <h4 className="text-sm font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -39,9 +41,18 @@ export default function AppFooter() {
                   Pricing
                 </a>
               </li>
+              <li>
+                <a
+                  href="/support"
+                  className="hover:text-primary transition-colors"
+                >
+                  Support
+                </a>
+              </li>
             </ul>
           </div>
 
+          {/* Legal Links */}
           <div>
             <h4 className="text-sm font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -59,6 +70,14 @@ export default function AppFooter() {
                   className="hover:text-primary transition-colors"
                 >
                   Terms of Service
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/contact"
+                  className="hover:text-primary transition-colors"
+                >
+                  Contact Us
                 </a>
               </li>
             </ul>
