@@ -1,4 +1,4 @@
-<!-- ### `phase-2-authenticated-shell-and-onboarding.md`
+### `phase-2-authenticated-shell-and-onboarding.md`
 
 **Phase 2: Authenticated Shell & Initial Onboarding**
 **Version:** 1.0
@@ -113,4 +113,4 @@ _We will build the "Products" feature end-to-end first to serve as the template 
 ### 5. Status of Uncompleted Phases
 
 - **Phase 3: Daily Operations (POS & Inventory Intake)** - _Not Started_
-- **Phase 4: Business Management & Reporting** - _Not Started_ -->
+- **Phase 4: Business Management & Reporting** - _Not Started_

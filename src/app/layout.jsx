@@ -1,6 +1,7 @@
 import { Nunito } from "next/font/google";
 import SessionProviderWrapper from "@/components/providers/SessionProviderWrapper";
 import QueryProvider from "@/components/providers/QueryProvider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 // Font setup as per the design guide (guide-12).
@@ -41,7 +42,10 @@ export default function RootLayout({ children }) {
             The QueryProvider sets up the TanStack Query client, enabling
             client-side data fetching, caching, and state management.
           */}
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
         </SessionProviderWrapper>
       </body>
     </html>

@@ -1,5 +1,8 @@
+// src/lib/auth.config.js
+
 import GoogleProvider from "next-auth/providers/google";
-import { upsertUserAndCreateShop } from "./services/user-service"; // <-- IMPORT THE SERVICE
+import prisma from "./prisma";
+import { upsertUserAndCreateShop } from "./services/user-service";
 
 /**
  * @type {import('next-auth').NextAuthConfig}
@@ -20,35 +23,32 @@ export const authConfig = {
   callbacks: {
     /**
      * This callback is triggered on a successful sign-in.
-     * It now calls our encapsulated service function to handle database operations.
+     * It calls our encapsulated service function to handle database operations.
      */
     async signIn({ user, account }) {
       if (account?.provider !== "google") return false;
-
       try {
-        // Call the service function to handle user creation/verification.
         const dbUser = await upsertUserAndCreateShop(user);
-
-        // If the service function returns a user, the sign-in is successful.
-        // If it returns null (due to an error), the sign-in is blocked.
         return dbUser !== null;
       } catch (error) {
         console.error("Sign-in callback error:", error);
-        // Prevent sign-in on unexpected errors.
         return false;
       }
     },
 
-    // ... (the rest of your authorized, jwt, and session callbacks remain unchanged) ...
+    /**
+     * Controls access to protected routes.
+     */
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
 
       if (isOnDashboard) {
         if (isLoggedIn) return true;
-        return false;
+        return false; // Redirect unauthenticated users to login page
       } else if (isLoggedIn) {
         if (nextUrl.pathname === "/login") {
+          // Redirect authenticated users from login page to dashboard
           return Response.redirect(new URL("/dashboard", nextUrl));
         }
         return true;
@@ -56,17 +56,35 @@ export const authConfig = {
       return true;
     },
 
-    async jwt({ token, user, account }) {
-      if (account && user) {
-        token.id = user.id;
+    /**
+     * This callback enriches the JWT with data from your database.
+     * It's called after a successful sign-in to create the token.
+     */
+    async jwt({ token, user }) {
+      // On initial sign-in, find the user in your database.
+      if (user) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+
+        // Persist the database ID and role to the token.
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+        }
       }
       return token;
     },
 
+    /**
+     * This callback creates the final session object from the JWT data.
+     * This is the missing piece that makes the user ID available to your app.
+     */
     async session({ session, token }) {
+      // Transfer the user ID and role from the token to the session object.
       if (token.id && session.user) {
-        // @ts-ignore
         session.user.id = token.id;
+        session.user.role = token.role;
       }
       return session;
     },

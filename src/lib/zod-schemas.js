@@ -8,16 +8,28 @@ import { z } from "zod";
  */
 export const productCreateSchema = z.object({
   name: z.string().min(1, { message: "Product name cannot be empty." }),
-  sellingPrice: z
-    .number()
-    .positive({ message: "Selling price must be a positive number." }),
-  purchasePrice: z
-    .number()
-    .nonnegative({
+  sellingPrice: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number().positive({ message: "Selling price must be a positive number." })
+  ),
+  purchasePrice: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number().nonnegative({
       message: "Purchase price must be a positive number or zero.",
-    }),
-  stock: z.number().int().nonnegative().optional(),
-  reorderPoint: z.number().int().nonnegative().optional(),
+    })
+  ),
+  stock: z
+    .preprocess(
+      (val) => (val === "" ? undefined : Number(val)),
+      z.number().int().nonnegative()
+    )
+    .optional(),
+  reorderPoint: z
+    .preprocess(
+      (val) => (val === "" ? undefined : Number(val)),
+      z.number().int().nonnegative()
+    )
+    .optional(),
   categoryId: z.string().optional(),
   supplierId: z.string().optional(),
 });
