@@ -76,12 +76,22 @@ export async function POST(request) {
     // Return the newly created product object to support optimistic UI updates on the client.
     return NextResponse.json(newProduct, { status: 201 });
   } catch (error) {
-    if (error instanceof require("zod").ZodError) {
+    // Handle Zod validation errors
+    if (error.name === "ZodError") {
       return NextResponse.json(
         { error: "Invalid input data", details: error.errors },
         { status: 400 }
       );
     }
+
+    // Handle Prisma unique constraint violations (P2002)
+    if (error.code === "P2002" && error.meta?.target?.includes("name")) {
+      return NextResponse.json(
+        { error: "A product with this name already exists." },
+        { status: 409 }
+      );
+    }
+
     console.error("POST /api/products Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },

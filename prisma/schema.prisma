@@ -197,4 +197,5 @@ model Product {
   @@index([shopId])
   @@index([categoryId])
   @@index([supplierId])
+  @@unique([shopId, name]) // Add unique constraint for shop-scoped product names
 }

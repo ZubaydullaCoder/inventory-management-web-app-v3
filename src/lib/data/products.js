@@ -7,6 +7,32 @@ import prisma from "@/lib/prisma";
  */
 
 /**
+ * Checks if a product name already exists for a specific shop.
+ * @param {string} shopId - The ID of the shop to check within.
+ * @param {string} name - The product name to check.
+ * @returns {Promise<boolean>} True if the name is already taken, false otherwise.
+ */
+export async function isProductNameTaken(shopId, name) {
+  if (!name || name.trim() === "") {
+    return false;
+  }
+
+  const existingProduct = await prisma.product.findUnique({
+    where: {
+      shopId_name: {
+        shopId,
+        name: name.trim(),
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return !!existingProduct;
+}
+
+/**
  * Creates a new product for a specific shop.
  * @param {z.infer<ProductCreateInput>} productData - The validated product data.
  * @param {string} shopId - The ID of the shop this product belongs to.

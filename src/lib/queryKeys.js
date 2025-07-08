@@ -8,9 +8,10 @@ export const queryKeys = {
   products: {
     all: () => ["products"],
     lists: () => [...queryKeys.products.all(), "list"],
-    list: (filters) => [...queryKeys.products.lists(), filters],
+    list: (filters) => [...queryKeys.products.lists(), { filters }],
     details: () => [...queryKeys.products.all(), "detail"],
     detail: (id) => [...queryKeys.products.details(), id],
+    checkName: (name) => [...queryKeys.products.all(), "checkName", name],
   },
   // ... other resource keys will be added here in the future
 };
