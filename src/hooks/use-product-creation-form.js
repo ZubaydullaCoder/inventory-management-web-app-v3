@@ -22,6 +22,7 @@ export function useProductCreationForm({
   onOptimisticAdd,
   onSuccess,
   onError,
+  excludeId,
 }) {
   const nameInputRef = useRef(null);
   const { mutate } = useCreateProduct();
@@ -46,14 +47,31 @@ export function useProductCreationForm({
   const normalized = normalizeProductName(rawName);
   const [debouncedName] = useDebounce(normalized, 500);
 
-  // call the check-name hook
+  // --- Only check for duplicates if user actually typed a name (dirty) and it's not empty ---
+  const nameDirty = !!formState.dirtyFields?.name;
+  const nameHasChanged = nameDirty && !!debouncedName;
+
   const {
     data: nameCheckResult,
-    isFetching: isCheckingName, // Use isFetching instead of isLoading
+    isFetching: isCheckingName,
     error: nameCheckError,
-  } = useCheckProductName(debouncedName);
+  } = useCheckProductName(debouncedName, {
+    enabled: nameHasChanged,
+    excludeId,
+  });
 
-  const isNameDuplicate = Boolean(debouncedName && nameCheckResult?.exists);
+  const isNameDuplicate = Boolean(nameHasChanged && nameCheckResult?.exists);
+
+  // --- Compute feedback flags for ProductNameField ---
+  const showChecking = nameHasChanged && isCheckingName;
+  const showDuplicate = nameHasChanged && !isCheckingName && isNameDuplicate;
+  const showAvailable =
+    nameHasChanged &&
+    !isCheckingName &&
+    !isNameDuplicate &&
+    !nameCheckError &&
+    !!rawName;
+  const showError = nameHasChanged && !!nameCheckError;
 
   // auto-focus
   useEffect(() => {
@@ -125,9 +143,10 @@ export function useProductCreationForm({
     onSubmit,
     nameInputRef,
     watch,
-    isCheckingName,
-    isNameDuplicate,
-    nameCheckError,
+    isCheckingName: showChecking,
+    isNameDuplicate: showDuplicate,
+    nameCheckError: showError,
+    showAvailable,
     isSubmitDisabled,
   };
 }

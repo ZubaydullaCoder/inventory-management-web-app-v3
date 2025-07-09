@@ -56,6 +56,20 @@ export default function ProductCreationCockpit() {
     }, 5000);
   };
 
+  /**
+   * Callback for successful product edit. Updates the product in local state.
+   * @param {object} updatedProduct
+   */
+  const handleEditSuccess = (updatedProduct) => {
+    setSessionProducts((prev) =>
+      prev.map((p) =>
+        p.data.id === updatedProduct.id
+          ? { ...p, data: { ...p.data, ...updatedProduct }, status: "success" }
+          : p
+      )
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[600px]">
       {/* Left Column: Product Form */}
@@ -78,7 +92,10 @@ export default function ProductCreationCockpit() {
           <h2 className="text-xl font-semibold text-foreground mb-4">
             Recently Added
           </h2>
-          <ProductSessionCreationList products={sessionProducts} />
+          <ProductSessionCreationList
+            products={sessionProducts}
+            onEditSuccess={handleEditSuccess}
+          />
         </div>
       </div>
     </div>

@@ -19,6 +19,7 @@ export default function ProductNameField({
   isCheckingName,
   isNameDuplicate,
   nameCheckError,
+  showAvailable, // NEW: explicitly passed from parent
 }) {
   return (
     <FormField
@@ -45,17 +46,14 @@ export default function ProductNameField({
           {isCheckingName && (
             <p className="text-xs text-muted-foreground">Checking name...</p>
           )}
-          {!isCheckingName && isNameDuplicate && (
+          {isNameDuplicate && (
             <p className="text-xs text-red-600">
               A product with this name already exists.
             </p>
           )}
-          {!isCheckingName &&
-            !isNameDuplicate &&
-            !nameCheckError &&
-            field.value && (
-              <p className="text-xs text-green-600">✓ Name is available</p>
-            )}
+          {showAvailable && (
+            <p className="text-xs text-green-600">✓ Name is available</p>
+          )}
           {nameCheckError && (
             <p className="text-xs text-yellow-600">
               Unable to verify name uniqueness right now.

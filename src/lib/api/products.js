@@ -43,14 +43,38 @@ export async function createProductApi(newProductData) {
 }
 
 /**
+ * Updates an existing product by sending a PUT request to the API.
+ * @param {string} productId - The ID of the product to update.
+ * @param {z.infer<ProductCreateInput>} updatedProductData - The updated product data.
+ * @returns {Promise<import('@prisma/client').Product>} The updated product from the server.
+ */
+export async function updateProductApi(productId, updatedProductData) {
+  const response = await fetch(`/api/products/${productId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updatedProductData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Failed to update product");
+  }
+  return response.json();
+}
+
+/**
  * Checks if a product name already exists for the authenticated user's shop.
  * @param {string} name - The product name to check.
+ * @param {string} [excludeId] - Product ID to exclude from the check (for updates).
  * @returns {Promise<{exists: boolean}>}
  */
-export async function checkProductNameApi(name) {
-  const response = await fetch(
-    `/api/products/check-name?name=${encodeURIComponent(name)}`
-  );
+export async function checkProductNameApi(name, excludeId) {
+  const params = new URLSearchParams({ name });
+  if (excludeId) params.append("excludeId", excludeId);
+
+  const response = await fetch(`/api/products/check-name?${params.toString()}`);
   if (!response.ok) {
     throw new Error("Failed to check product name");
   }

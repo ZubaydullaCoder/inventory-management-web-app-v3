@@ -32,6 +32,9 @@ export default function ProductSessionCreationItem({
       currency: "USD",
     }).format(price || 0);
 
+  const canEdit =
+    status === "success" && product.id && !product.id.startsWith("optimistic");
+
   return (
     <div
       className={`border border-border rounded-lg p-4 transition-all duration-200 ${
@@ -96,7 +99,10 @@ export default function ProductSessionCreationItem({
           size="sm"
           onClick={() => onEdit(product)}
           className="ml-2 h-8 w-8 p-0"
-          disabled={status === "pending"}
+          disabled={!canEdit}
+          title={
+            canEdit ? "Edit product" : "Product must be saved before editing"
+          }
         >
           <Pencil className="h-3 w-3" />
         </Button>

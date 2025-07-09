@@ -1,4 +1,3 @@
-// src/hooks/use-products.js
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,29 +6,34 @@ import { normalizeProductName } from "@/lib/utils";
 import {
   getProductsApi,
   createProductApi,
+  updateProductApi,
   checkProductNameApi,
 } from "@/lib/api/products";
 
 /**
  * Hook to check if a product name already exists.
  * @param {string} name - The product name to check.
+ * @param {{ enabled?: boolean, excludeId?: string }} options
  * @returns {Object} TanStack Query result object.
  */
-export function useCheckProductName(name) {
+export function useCheckProductName(name, { enabled = true, excludeId } = {}) {
   const normalizedName = normalizeProductName(name);
 
   return useQuery({
-    queryKey: queryKeys.products.checkName(normalizedName),
+    queryKey: [
+      ...queryKeys.products.checkName(normalizedName),
+      { excludeId: excludeId || null },
+    ],
     queryFn: async () => {
       if (!normalizedName) {
         return { exists: false };
       }
-      return checkProductNameApi(normalizedName);
+      return checkProductNameApi(normalizedName, excludeId);
     },
-    enabled: Boolean(normalizedName),
+    enabled: enabled && Boolean(normalizedName),
     staleTime: Infinity,
     retry: 1,
-    refetchOnMount: true, // Always refetch when component mounts with this key
+    refetchOnMount: false, // don’t auto refetch when component mounts
   });
 }
 
@@ -92,6 +96,68 @@ export function useCreateProduct() {
       return { previousLists, normalizedName };
     },
     onError: (_err, _newProduct, context) => {
+      // Rollback cache to previous state
+      if (context?.previousLists) {
+        context.previousLists.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+    },
+    onSuccess: (_data, variables, context) => {
+      // Invalidate product lists to refetch from server
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      // Invalidate name check for this name
+      if (context?.normalizedName) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.products.checkName(context.normalizedName),
+        });
+      }
+    },
+  });
+}
+
+/**
+ * Hook to update an existing product with optimistic updates.
+ * @returns {Object} TanStack Query mutation object.
+ */
+export function useUpdateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, productData }) =>
+      updateProductApi(productId, productData),
+    onMutate: async ({ productId, productData }) => {
+      const normalizedName = normalizeProductName(productData.name);
+
+      // Cancel outgoing fetches for product lists
+      await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
+
+      // Snapshot previous cache
+      const previousLists = queryClient.getQueriesData({
+        queryKey: queryKeys.products.lists(),
+      });
+
+      // Optimistically update all cached product lists
+      queryClient
+        .getQueryCache()
+        .findAll(queryKeys.products.lists())
+        .forEach((query) => {
+          const oldData = query.state.data;
+          if (oldData && Array.isArray(oldData.products)) {
+            queryClient.setQueryData(query.queryKey, {
+              ...oldData,
+              products: oldData.products.map((product) =>
+                product.id === productId
+                  ? { ...product, ...productData, name: normalizedName }
+                  : product
+              ),
+            });
+          }
+        });
+
+      return { previousLists, normalizedName };
+    },
+    onError: (_err, _variables, context) => {
       // Rollback cache to previous state
       if (context?.previousLists) {
         context.previousLists.forEach(([key, data]) => {

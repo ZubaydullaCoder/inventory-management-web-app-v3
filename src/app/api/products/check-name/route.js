@@ -17,6 +17,7 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const rawName = searchParams.get("name");
+    const excludeId = searchParams.get("excludeId"); // NEW
 
     if (!rawName) {
       return NextResponse.json({ exists: false });
@@ -38,7 +39,8 @@ export async function GET(request) {
       );
     }
 
-    const exists = await isProductNameTaken(shopId, rawName);
+    // Pass excludeId to data layer
+    const exists = await isProductNameTaken(shopId, rawName, excludeId);
 
     return NextResponse.json({ exists });
   } catch (error) {

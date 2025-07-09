@@ -11,22 +11,34 @@ import { normalizeProductName } from "@/lib/utils";
  * Checks if a product name already exists for a specific shop.
  * @param {string} shopId - The ID of the shop to check within.
  * @param {string} name - The product name to check.
+ * @param {string} [excludeProductId] - Product ID to exclude from the check (for updates).
  * @returns {Promise<boolean>} True if the name is already taken, false otherwise.
  */
-export async function isProductNameTaken(shopId, name) {
+export async function isProductNameTaken(
+  shopId,
+  name,
+  excludeProductId = null
+) {
   const normalizedName = normalizeProductName(name);
 
   if (!normalizedName) {
     return false;
   }
 
-  const existingProduct = await prisma.product.findUnique({
-    where: {
-      shopId_name: {
-        shopId,
-        name: normalizedName,
-      },
-    },
+  const whereClause = {
+    shopId,
+    name: normalizedName,
+  };
+
+  // Exclude the current product when checking for updates
+  if (excludeProductId) {
+    whereClause.NOT = {
+      id: excludeProductId,
+    };
+  }
+
+  const existingProduct = await prisma.product.findFirst({
+    where: whereClause,
     select: {
       id: true,
     },
@@ -53,6 +65,30 @@ export async function createProduct(productData, shopId) {
       ...normalizedProductData,
       shopId: shopId,
     },
+  });
+  return product;
+}
+
+/**
+ * Updates an existing product for a specific shop.
+ * @param {string} productId - The ID of the product to update.
+ * @param {z.infer<ProductCreateInput>} productData - The validated product data.
+ * @param {string} shopId - The ID of the shop this product belongs to.
+ * @returns {Promise<import('@prisma/client').Product>} The updated product.
+ */
+export async function updateProduct(productId, productData, shopId) {
+  // Normalize the product name before updating
+  const normalizedProductData = {
+    ...productData,
+    name: normalizeProductName(productData.name),
+  };
+
+  const product = await prisma.product.update({
+    where: {
+      id: productId,
+      shopId: shopId, // Ensure the product belongs to the shop
+    },
+    data: normalizedProductData,
   });
   return product;
 }
@@ -88,7 +124,11 @@ export async function getProductsByShopId(shopId, { page = 1, limit = 10 }) {
         id: true,
         name: true,
         sellingPrice: true,
+        purchasePrice: true,
         stock: true,
+        reorderPoint: true,
+        categoryId: true,
+        supplierId: true,
         isActive: true,
         category: {
           select: {

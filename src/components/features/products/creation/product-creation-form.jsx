@@ -31,6 +31,7 @@ export default function ProductCreationForm({
     isCheckingName,
     isNameDuplicate,
     nameCheckError,
+    showAvailable,
     isSubmitDisabled,
   } = useProductCreationForm({ onOptimisticAdd, onSuccess, onError });
 
@@ -43,6 +44,7 @@ export default function ProductCreationForm({
           isCheckingName={isCheckingName}
           isNameDuplicate={isNameDuplicate}
           nameCheckError={nameCheckError}
+          showAvailable={showAvailable}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
