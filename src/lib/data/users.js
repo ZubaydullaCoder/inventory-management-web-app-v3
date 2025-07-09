@@ -22,23 +22,21 @@ export async function upsertUserAndCreateShop(user) {
 
     // If the user already exists, the process is successful. Return the user.
     if (existingUser) {
-      if (existingUser) {
-        // User exists, now check if they have a shop.
-        const existingShop = await prisma.shop.findUnique({
-          where: { ownerId: existingUser.id },
+      // User exists, now check if they have a shop.
+      const existingShop = await prisma.shop.findUnique({
+        where: { ownerId: existingUser.id },
+      });
+      if (!existingShop) {
+        // If they don't have a shop, create one for them.
+        await prisma.shop.create({
+          data: {
+            name: `${existingUser.name}'s Shop`,
+            ownerId: existingUser.id,
+            // Also create a default subscription here if needed
+          },
         });
-        if (!existingShop) {
-          // If they don't have a shop, create one for them.
-          await prisma.shop.create({
-            data: {
-              name: `${existingUser.name}'s Shop`,
-              ownerId: existingUser.id,
-              // Also create a default subscription here if needed
-            },
-          });
-        }
-        return existingUser; // Return the user
       }
+      return existingUser; // Return the user
     }
 
     // If the user is new, create the User, Shop, and Subscription

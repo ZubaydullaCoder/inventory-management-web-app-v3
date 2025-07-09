@@ -2,7 +2,7 @@
 
 import GoogleProvider from "next-auth/providers/google";
 import prisma from "./prisma";
-import { upsertUserAndCreateShop } from "./services/user-service";
+import { upsertUserAndCreateShop } from "./data/users";
 
 /**
  * @type {import('next-auth').NextAuthConfig}

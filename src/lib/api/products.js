@@ -1,5 +1,3 @@
-// src/lib/services/product-service.js
-
 /**
  * @typedef {import('@/lib/zod-schemas').productCreateSchema} ProductCreateInput
  */
@@ -40,6 +38,21 @@ export async function createProductApi(newProductData) {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error || "Failed to create product");
+  }
+  return response.json();
+}
+
+/**
+ * Checks if a product name already exists for the authenticated user's shop.
+ * @param {string} name - The product name to check.
+ * @returns {Promise<{exists: boolean}>}
+ */
+export async function checkProductNameApi(name) {
+  const response = await fetch(
+    `/api/products/check-name?name=${encodeURIComponent(name)}`
+  );
+  if (!response.ok) {
+    throw new Error("Failed to check product name");
   }
   return response.json();
 }

@@ -2,8 +2,8 @@
 "use client";
 
 import { useState } from "react";
-import ProductForm from "@/components/features/products/product-form";
-import SessionCreationList from "@/components/features/products/session-creation-list";
+import ProductCreationForm from "@/components/features/products/creation/product-creation-form";
+import ProductSessionCreationList from "@/components/features/products/creation/product-session-creation-list";
 
 /**
  * Client-side wrapper for the product creation cockpit.
@@ -64,7 +64,7 @@ export default function ProductCreationCockpit() {
           <h2 className="text-xl font-semibold text-foreground mb-4">
             Product Details
           </h2>
-          <ProductForm
+          <ProductCreationForm
             onOptimisticAdd={handleOptimisticAdd}
             onSuccess={handleSuccess}
             onError={handleError}
@@ -78,7 +78,7 @@ export default function ProductCreationCockpit() {
           <h2 className="text-xl font-semibold text-foreground mb-4">
             Recently Added
           </h2>
-          <SessionCreationList products={sessionProducts} />
+          <ProductSessionCreationList products={sessionProducts} />
         </div>
       </div>
     </div>

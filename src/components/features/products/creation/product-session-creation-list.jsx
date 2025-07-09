@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
  * @param {{ products: Array<{data: object, status: string, optimisticId: string}> }} props
  * @returns {JSX.Element}
  */
-export default function SessionCreationList({ products = [] }) {
+export default function ProductSessionCreationList({ products = [] }) {
   console.log("products in session creation list", products);
   const handleEditProduct = (product) => {
     console.log("Edit product:", product);

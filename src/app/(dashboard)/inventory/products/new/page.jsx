@@ -1,6 +1,6 @@
 // src/app/(dashboard)/inventory/products/new/page.jsx
 
-import ProductCreationCockpit from "@/components/features/products/product-creation-cockpit";
+import ProductCreationCockpit from "@/components/features/products/creation/product-creation-cockpit";
 
 /**
  * Server Component page for bulk-adding products.

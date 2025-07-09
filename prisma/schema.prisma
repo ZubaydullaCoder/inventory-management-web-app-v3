@@ -189,10 +189,10 @@ model Product {
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete:SetNull)
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   supplierId String?
-  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete:SetNull)
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@index([shopId])
   @@index([categoryId])

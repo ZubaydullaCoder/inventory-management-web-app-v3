@@ -1,6 +1,7 @@
 // src/lib/data/products.js
 
 import prisma from "@/lib/prisma";
+import { normalizeProductName } from "@/lib/utils";
 
 /**
  * @typedef {import('@/lib/zod-schemas').productCreateSchema} ProductCreateInput
@@ -13,7 +14,9 @@ import prisma from "@/lib/prisma";
  * @returns {Promise<boolean>} True if the name is already taken, false otherwise.
  */
 export async function isProductNameTaken(shopId, name) {
-  if (!name || name.trim() === "") {
+  const normalizedName = normalizeProductName(name);
+
+  if (!normalizedName) {
     return false;
   }
 
@@ -21,7 +24,7 @@ export async function isProductNameTaken(shopId, name) {
     where: {
       shopId_name: {
         shopId,
-        name: name.trim(),
+        name: normalizedName,
       },
     },
     select: {
@@ -39,9 +42,15 @@ export async function isProductNameTaken(shopId, name) {
  * @returns {Promise<import('@prisma/client').Product>} The newly created product.
  */
 export async function createProduct(productData, shopId) {
+  // Normalize the product name before creating
+  const normalizedProductData = {
+    ...productData,
+    name: normalizeProductName(productData.name),
+  };
+
   const product = await prisma.product.create({
     data: {
-      ...productData,
+      ...normalizedProductData,
       shopId: shopId,
     },
   });
