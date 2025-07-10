@@ -15,7 +15,8 @@ import { toast } from "sonner";
  * @param {{
  *   onOptimisticAdd: Function,
  *   onSuccess: Function,
- *   onError: Function
+ *   onError: Function,
+ *   excludeId?: string
  * }} props
  */
 export function useProductCreationForm({
@@ -58,6 +59,8 @@ export function useProductCreationForm({
   } = useCheckProductName(debouncedName, {
     enabled: nameHasChanged,
     excludeId,
+    // --- NEW: For creation form, use shorter staleTime for guaranteed accuracy ---
+    staleTime: excludeId ? Infinity : 0,
   });
 
   const isNameDuplicate = Boolean(nameHasChanged && nameCheckResult?.exists);

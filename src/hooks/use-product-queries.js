@@ -13,10 +13,13 @@ import {
 /**
  * Hook to check if a product name already exists.
  * @param {string} name - The product name to check.
- * @param {{ enabled?: boolean, excludeId?: string }} options
+ * @param {{ enabled?: boolean, excludeId?: string, staleTime?: number }} options
  * @returns {Object} TanStack Query result object.
  */
-export function useCheckProductName(name, { enabled = true, excludeId } = {}) {
+export function useCheckProductName(
+  name,
+  { enabled = true, excludeId, staleTime = Infinity } = {}
+) {
   const normalizedName = normalizeProductName(name);
 
   return useQuery({
@@ -31,7 +34,7 @@ export function useCheckProductName(name, { enabled = true, excludeId } = {}) {
       return checkProductNameApi(normalizedName, excludeId);
     },
     enabled: enabled && Boolean(normalizedName),
-    staleTime: Infinity,
+    staleTime, // Accept staleTime as parameter for different cache strategies
     retry: 1,
     refetchOnMount: false, // don’t auto refetch when component mounts
   });
@@ -129,6 +132,18 @@ export function useUpdateProduct() {
     onMutate: async ({ productId, productData }) => {
       const normalizedName = normalizeProductName(productData.name);
 
+      // --- NEW: Capture the old normalized name from existing cache ---
+      let oldNormalizedName = null;
+      const existingProduct = queryClient
+        .getQueryCache()
+        .findAll(queryKeys.products.lists())
+        .flatMap((query) => query.state.data?.products || [])
+        .find((product) => product.id === productId);
+
+      if (existingProduct) {
+        oldNormalizedName = normalizeProductName(existingProduct.name);
+      }
+
       // Cancel outgoing fetches for product lists
       await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
 
@@ -155,7 +170,7 @@ export function useUpdateProduct() {
           }
         });
 
-      return { previousLists, normalizedName };
+      return { previousLists, normalizedName, oldNormalizedName };
     },
     onError: (_err, _variables, context) => {
       // Rollback cache to previous state
@@ -168,10 +183,19 @@ export function useUpdateProduct() {
     onSuccess: (_data, variables, context) => {
       // Invalidate product lists to refetch from server
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
-      // Invalidate name check for this name
+
+      // --- NEW: Invalidate name checks for BOTH old and new normalized names ---
       if (context?.normalizedName) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.products.checkName(context.normalizedName),
+        });
+      }
+      if (
+        context?.oldNormalizedName &&
+        context.oldNormalizedName !== context.normalizedName
+      ) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.products.checkName(context.oldNormalizedName),
         });
       }
     },
