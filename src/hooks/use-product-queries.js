@@ -184,18 +184,35 @@ export function useUpdateProduct() {
       // Invalidate product lists to refetch from server
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
 
-      // --- NEW: Invalidate name checks for BOTH old and new normalized names ---
+      // --- ENHANCED: Invalidate ALL name check variations for both old and new names ---
+      // This ensures creation form cache is properly cleared
       if (context?.normalizedName) {
+        // Invalidate with excludeId variations
         queryClient.invalidateQueries({
           queryKey: queryKeys.products.checkName(context.normalizedName),
+        });
+        // Also invalidate creation form queries (no excludeId)
+        queryClient.removeQueries({
+          queryKey: [
+            ...queryKeys.products.checkName(context.normalizedName),
+            { excludeId: null },
+          ],
         });
       }
       if (
         context?.oldNormalizedName &&
         context.oldNormalizedName !== context.normalizedName
       ) {
+        // Invalidate with excludeId variations
         queryClient.invalidateQueries({
           queryKey: queryKeys.products.checkName(context.oldNormalizedName),
+        });
+        // Also invalidate creation form queries (no excludeId)
+        queryClient.removeQueries({
+          queryKey: [
+            ...queryKeys.products.checkName(context.oldNormalizedName),
+            { excludeId: null },
+          ],
         });
       }
     },
