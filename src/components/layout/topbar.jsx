@@ -1,6 +1,7 @@
 import Link from "next/link";
 import UserNav from "@/components/features/auth/user-nav";
 import PrimaryButton from "@/components/ui/primary-button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Plus } from "lucide-react";
 
 /**
@@ -19,8 +20,11 @@ export function TopBar({ session }) {
   return (
     <header className="bg-background border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
-        {/* Left side - Breadcrumbs placeholder */}
+        {/* Left side - Sidebar trigger and breadcrumbs */}
         <div className="flex items-center space-x-4">
+          {/* Sidebar toggle button */}
+          <SidebarTrigger />
+
           <nav className="text-sm text-muted-foreground">
             {/* Placeholder for future breadcrumbs */}
             <span>Dashboard</span>

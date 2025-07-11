@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/layout/sidebar";
+import { cookies } from "next/headers";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 import { TopBar } from "@/components/layout/topbar";
 
 /**
@@ -24,19 +26,20 @@ export default async function DashboardLayout({ children }) {
     redirect("/");
   }
 
-  return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar - Fixed width navigation */}
-      <Sidebar />
+  // Read sidebar state from cookies for persistence
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
-      {/* Main content area */}
-      <main className="flex-1 flex flex-col">
+  return (
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <AppSidebar />
+      <SidebarInset>
         {/* Top bar with user navigation and global actions */}
         <TopBar session={session} />
 
         {/* Page content */}
         <div className="flex-1 p-6">{children}</div>
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

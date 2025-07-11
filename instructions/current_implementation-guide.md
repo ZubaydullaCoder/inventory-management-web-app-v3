@@ -1,92 +1,69 @@
 Step 1 — Intent Clarification & Request Evaluation
-User Intent Analysis: The user wants to reorganize the product creation form layout to improve the visual grouping and user experience. Specifically:
+Intent Analysis: Your request is clear and actionable. You're experiencing UI issues with the sidebar menu items where they:
 
-Initial Stock and Reorder Point should be on the same row (currently they're separated)
-Unit of Measure, Category, and Supplier should each take full width (single column) like the Product Name field
-This creates better logical grouping and visual hierarchy
-Clarity & Completeness: The request is clear and actionable. The user wants to move from a primarily two-column grid layout to a mixed layout that emphasizes field relationships and reduces visual clutter.
+Are not displaying accurately/properly in the sidebar
+Need to be bigger in size for better visibility and usability
+Looking at the screenshot, I can see the sidebar is collapsed to icon mode, but the menu items appear to be cut off or not properly sized for optimal user experience.
+
+Completeness: The request is complete. You've identified the specific issue (menu item display and sizing) and provided visual context through the screenshot.
 
 Step 2 — What Do We Implement?
 Current Behavior:
 
-Product Name: Full width (good)
-Selling/Purchase Price: Two columns (appropriate)
-Initial Stock/Unit of Measure: Two columns (confusing pairing)
-Reorder Point: Two columns with empty space (wasteful)
-Category/Supplier: Two columns (cramped for complex inputs)
+Menu items appear small and potentially cramped in the sidebar
+Icons and text may not be optimally sized for readability
+The overall visual hierarchy might not be as clear as it should be
+User interaction targets (clickable areas) may be too small
 Expected Behavior After Implementation:
 
-Product Name: Full width (unchanged)
-Selling/Purchase Price: Two columns (unchanged - related pricing fields)
-Initial Stock/Reorder Point: Two columns (logical inventory quantity pairing)
-Unit of Measure: Full width (standalone field with better visibility)
-Category: Full width (CreatableSelect needs space for dropdown and search)
-Supplier: Full width (consistent with other standalone fields)
+Larger menu items: Increased button size for better touch targets and visual prominence
+Better spacing: Improved padding and margins for cleaner appearance
+Enhanced readability: Appropriately sized icons and text labels
+Consistent sizing: All menu items follow the same size standards for visual coherence
+Improved UX: Easier navigation with more comfortable click/tap targets
+Responsive behavior: Proper sizing in both expanded and collapsed states
 Benefits:
 
-Better field grouping (inventory quantities together)
-More space for complex inputs (Category CreatableSelect, Unit dropdown)
-Improved visual hierarchy and scanning
-Consistent single-column treatment for metadata fields
-No wasted empty grid spaces
+Better accessibility with larger touch targets
+Enhanced visual hierarchy and readability
+More professional and polished appearance
+Improved user experience across all device sizes
+Consistent with modern UI design standards
 Step 3 — How Do We Implement?
 Current Project Analysis:
 
-The form uses Tailwind CSS grid utilities (grid grid-cols-1 md:grid-cols-2 gap-4)
-Form structure is clean with clear field groupings
-Components are well-modularized (NumberField, UnitSelectField, CategoryCreatableSelect)
-Current layout logic is straightforward to modify
-Implementation Approach:
+Sidebar structure: Uses shadcn's sidebar components with proper architecture
+Menu items: Currently using default SidebarMenuButton size
+Styling approach: Tailwind CSS with shadcn component system
+Integration point: app-sidebar.jsx component contains the menu rendering logic
+Available Solutions:
 
-Reorganize Grid Sections: Modify the existing grid containers to reflect new field groupings
-Maintain Responsive Design: Keep md:grid-cols-2 for two-column fields, use single column for standalone fields
-Preserve Field Components: No changes needed to individual field components
-Keep Current Spacing: Maintain space-y-6 for section spacing and gap-4 for grid gaps
-Technical Changes Needed:
+Size prop approach: Use SidebarMenuButton size variants (sm, default, lg)
+Custom styling: Add custom classes to override default sizes
+Global styling: Modify the base sidebar component styles
+Responsive sizing: Different sizes for different screen sizes
+Selected Approach: Use the size="lg" prop on SidebarMenuButton components as it's the most maintainable and follows shadcn's design system patterns. This leverages the built-in size variants rather than custom CSS.
 
-Move reorderPoint from its own grid section to pair with stock
-Move unit from pairing with stock to its own full-width section
-Move categoryId and supplierId to individual full-width sections
-Remove the empty <div /> placeholder that was balancing the reorder point
-Layout Strategy:
+Technical Implementation:
 
-Section 1: Product Name (full width) ✓ unchanged
-Section 2: Selling Price + Purchase Price (two columns) ✓ unchanged
-Section 3: Initial Stock + Reorder Point (two columns) ✓ new grouping
-Section 4: Unit of Measure (full width) ✓ new standalone
-Section 5: Category (full width) ✓ new standalone
-Section 6: Supplier (full width) ✓ new standalone
+Update SidebarMenuButton components to use size="lg"
+Ensure consistent sizing across all menu items
+Test both expanded and collapsed states
+Verify the spacing works well with the header branding section
 Step 4 — Final Plan Summary
-📁 Files to be Updated:
+📁 Files to be updated:
 
-product-creation-form.jsx - Reorganize form layout sections
-📦 Existing Dependencies Leveraged:
+app-sidebar.jsx - Update menu button sizes
+📦 Relevant packages:
 
-Tailwind CSS grid utilities (no additional packages needed)
-Existing form components (NumberField, UnitSelectField, CategoryCreatableSelect)
-Current responsive design patterns (grid-cols-1 md:grid-cols-2)
-🔄 Reused Components/Logic:
+No new packages needed - using existing shadcn/ui sidebar components
+SidebarMenuButton size prop variants: sm | default | lg
+🔄 Reused components:
 
-All existing field components remain unchanged
-Current form validation and submission logic preserved
-Existing spacing and styling patterns maintained
-Specific Changes:
+Existing SidebarMenuButton from @/components/ui/sidebar
+Current navigation structure and icon configuration
+💻 Implementation approach:
 
-Combine Initial Stock + Reorder Point in one two-column grid section
-Convert Unit of Measure to full-width standalone section
-Convert Category to full-width standalone section
-Convert Supplier to full-width standalone section
-Remove empty <div /> placeholder element
-⏳ ✅ **COMPLETED** - Layout reorganization implemented successfully.
-
-The implementation has been completed and tested:
-
-- Initial Stock and Reorder Point are now paired in the same row
-- Unit of Measure is now a full-width standalone field
-- Category is now a full-width standalone field (with CreatableSelect functionality)
-- Supplier is now a full-width standalone field
-- Removed the empty `<div />` placeholder
-- Both product creation and edit forms maintain consistent layout
-- No compilation errors and server running successfully
-
-The new layout provides better logical field grouping and improved user experience.
+Modify SidebarMenuButton components to use size="lg" prop
+Ensure consistent sizing across all navigation items
+Test responsive behavior in both collapsed and expanded states
