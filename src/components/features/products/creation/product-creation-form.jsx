@@ -75,43 +75,39 @@ export default function ProductCreationForm({
             label="Initial Stock"
             placeholder="0"
           />
-          <UnitSelectField
-            control={control}
-            name="unit"
-            label="Unit of Measure"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <NumberField
             control={control}
             name="reorderPoint"
             label="Reorder Point"
             placeholder="0"
           />
-          <div /> {/* Empty space for layout balance */}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <CategoryCreatableSelect
-            control={control}
-            name="categoryId"
-            label="Category"
-          />
-          <FormField
-            control={control}
-            name="supplierId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Supplier</FormLabel>
-                <FormControl>
-                  <Input placeholder="Optional" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <UnitSelectField
+          control={control}
+          name="unit"
+          label="Unit of Measure"
+        />
+
+        <CategoryCreatableSelect
+          control={control}
+          name="categoryId"
+          label="Category"
+        />
+
+        <FormField
+          control={control}
+          name="supplierId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Supplier</FormLabel>
+              <FormControl>
+                <Input placeholder="Optional" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="pt-4">
           <Button type="submit" className="w-full" disabled={isSubmitDisabled}>

@@ -50,7 +50,7 @@ export default function CategoryCreatableSelect({
   name = "categoryId",
   label = "Category",
   required = false,
-  placeholder = "Select or create a category...",
+  placeholder = "Category (optional)",
 }) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
