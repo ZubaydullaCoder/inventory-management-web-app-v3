@@ -67,7 +67,8 @@ export default function ProductSessionCreationItem({
           {/* Stock Information */}
           {product.stock !== undefined && product.stock !== null && (
             <div className="text-sm text-muted-foreground">
-              <span className="font-medium">Stock:</span> {product.stock} units
+              <span className="font-medium">Stock:</span> {product.stock}{" "}
+              {product.unit || "units"}
             </div>
           )}
 

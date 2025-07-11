@@ -28,6 +28,7 @@ export const productCreateSchema = z.object({
       z.number().int().nonnegative()
     )
     .optional(),
+  unit: z.string().optional(),
   reorderPoint: z
     .preprocess(
       (val) => (val === "" ? undefined : Number(val)),

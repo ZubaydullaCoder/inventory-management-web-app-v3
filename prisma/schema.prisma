@@ -180,6 +180,7 @@ model Product {
   purchasePrice Decimal
   sellingPrice  Decimal
   stock         Int      @default(0)
+  unit          String?  // Unit of measure (e.g., "pieces", "kg", "liters")
   reorderPoint  Int?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())

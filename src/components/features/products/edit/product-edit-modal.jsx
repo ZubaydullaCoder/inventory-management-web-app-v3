@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import ProductNameField from "../creation/product-name-field";
 import NumberField from "../number-field";
+import UnitSelectField from "../unit-select-field";
 
 /**
  * Modal component for editing an existing product.
@@ -94,12 +95,21 @@ export default function ProductEditModal({
                 label="Current Stock"
                 placeholder="0"
               />
+              <UnitSelectField
+                control={control}
+                name="unit"
+                label="Unit of Measure"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <NumberField
                 control={control}
                 name="reorderPoint"
                 label="Reorder Point"
                 placeholder="0"
               />
+              <div /> {/* Empty space for layout balance */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

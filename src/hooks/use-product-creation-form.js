@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDebounce } from "use-debounce";
@@ -25,23 +25,32 @@ export function useProductCreationForm({
   onError,
   excludeId,
 }) {
+  // Default form values for reset
+  const initialValues = {
+    name: "",
+    sellingPrice: "",
+    purchasePrice: "",
+    stock: "",
+    unit: "",
+    reorderPoint: "",
+    categoryId: "",
+    supplierId: "",
+  };
   const nameInputRef = useRef(null);
   const { mutate } = useCreateProduct();
 
   // react-hook-form setup
   const form = useForm({
     resolver: zodResolver(productCreateSchema),
-    defaultValues: {
-      name: "",
-      sellingPrice: "",
-      purchasePrice: "",
-      stock: "",
-      reorderPoint: "",
-      categoryId: "",
-      supplierId: "",
-    },
+    defaultValues: initialValues,
   });
   const { control, handleSubmit, reset, watch, formState } = form;
+  // Watch unit field to preserve user selection
+  const unit = watch("unit");
+  const [lastUnit, setLastUnit] = useState(initialValues.unit);
+  useEffect(() => {
+    setLastUnit(unit);
+  }, [unit]);
 
   // normalize & debounce name
   const rawName = watch("name");
@@ -95,6 +104,7 @@ export function useProductCreationForm({
         sellingPrice: Number(values.sellingPrice),
         purchasePrice: Number(values.purchasePrice),
         stock: values.stock ? Number(values.stock) : undefined,
+        unit: values.unit || undefined,
         reorderPoint: values.reorderPoint
           ? Number(values.reorderPoint)
           : undefined,
@@ -107,7 +117,8 @@ export function useProductCreationForm({
         data: { ...processed, id: optimisticId },
         status: "pending",
       });
-      reset();
+      // Reset form fields and preserve last selected unit
+      reset({ ...initialValues, unit: lastUnit });
       setTimeout(() => nameInputRef.current?.focus(), 100);
 
       mutate(processed, {
@@ -132,6 +143,7 @@ export function useProductCreationForm({
       onSuccess,
       onError,
       reset,
+      lastUnit,
     ]
   );
 
