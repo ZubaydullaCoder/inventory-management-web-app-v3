@@ -3,6 +3,7 @@
 import ProductNameField from "./product-name-field";
 import NumberField from "../number-field";
 import UnitSelectField from "../unit-select-field";
+import CategoryCreatableSelect from "../category-creatable-select";
 import {
   Form,
   FormField,
@@ -92,18 +93,10 @@ export default function ProductCreationForm({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
+          <CategoryCreatableSelect
             control={control}
             name="categoryId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Input placeholder="Optional" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Category"
           />
           <FormField
             control={control}

@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 import ProductNameField from "../creation/product-name-field";
 import NumberField from "../number-field";
 import UnitSelectField from "../unit-select-field";
+import CategoryCreatableSelect from "../category-creatable-select";
 
 /**
  * Modal component for editing an existing product.
@@ -113,18 +114,10 @@ export default function ProductEditModal({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
+              <CategoryCreatableSelect
                 control={control}
                 name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Optional" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Category"
               />
               <FormField
                 control={control}

@@ -24,3 +24,14 @@ export function normalizeProductName(name) {
     .replace(/\p{Z}+/gu, " ")
     .toLowerCase();
 }
+
+/**
+ * Normalizes a category name using the same logic as product names.
+ * This ensures consistent naming patterns across the application.
+ *
+ * @param {string} name - The raw category name input
+ * @returns {string} The normalized name
+ */
+export function normalizeCategoryName(name) {
+  return normalizeProductName(name);
+}

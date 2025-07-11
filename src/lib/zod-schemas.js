@@ -1,7 +1,7 @@
 // src/lib/zod-schemas.js
 
 import { z } from "zod";
-import { normalizeProductName } from "@/lib/utils";
+import { normalizeProductName, normalizeCategoryName } from "@/lib/utils";
 
 /**
  * @description Zod schema for validating the input for creating a new product.
@@ -37,4 +37,15 @@ export const productCreateSchema = z.object({
     .optional(),
   categoryId: z.string().optional(),
   supplierId: z.string().optional(),
+});
+
+/**
+ * @description Zod schema for validating category creation input.
+ * This is used in the API route to ensure data integrity.
+ */
+export const categoryCreateSchema = z.object({
+  name: z.preprocess(
+    (val) => normalizeCategoryName(val),
+    z.string().min(1, { message: "Category name cannot be empty." })
+  ),
 });

@@ -138,6 +138,7 @@ model Category {
   products Product[]
 
   @@index([shopId])
+  @@unique([shopId, name]) // Add unique constraint for shop-scoped category names
 }
 
 // Suppliers from whom products are purchased.
