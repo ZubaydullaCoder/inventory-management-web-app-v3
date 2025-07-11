@@ -52,6 +52,13 @@ export function useProductCreationForm({
     setLastUnit(unit);
   }, [unit]);
 
+  // Preserve last selected category
+  const categoryId = watch("categoryId");
+  const [lastCategory, setLastCategory] = useState(initialValues.categoryId);
+  useEffect(() => {
+    setLastCategory(categoryId);
+  }, [categoryId]);
+
   // normalize & debounce name
   const rawName = watch("name");
   const normalized = normalizeProductName(rawName);
@@ -117,8 +124,8 @@ export function useProductCreationForm({
         data: { ...processed, id: optimisticId },
         status: "pending",
       });
-      // Reset form fields and preserve last selected unit
-      reset({ ...initialValues, unit: lastUnit });
+      // Reset form fields and preserve last selected unit and categoryId
+      reset({ ...initialValues, unit: lastUnit, categoryId: lastCategory }); // include category preservation
       setTimeout(() => nameInputRef.current?.focus(), 100);
 
       mutate(processed, {
@@ -144,6 +151,7 @@ export function useProductCreationForm({
       onError,
       reset,
       lastUnit,
+      lastCategory,
     ]
   );
 

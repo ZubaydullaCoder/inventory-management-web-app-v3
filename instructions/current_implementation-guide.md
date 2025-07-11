@@ -1,69 +1,31 @@
 Step 1 — Intent Clarification & Request Evaluation
-Intent Analysis: Your request is clear and actionable. You're experiencing UI issues with the sidebar menu items where they:
 
-Are not displaying accurately/properly in the sidebar
-Need to be bigger in size for better visibility and usability
-Looking at the screenshot, I can see the sidebar is collapsed to icon mode, but the menu items appear to be cut off or not properly sized for optimal user experience.
-
-Completeness: The request is complete. You've identified the specific issue (menu item display and sizing) and provided visual context through the screenshot.
-
+You want the “Category” dropdown in the product-creation form to behave like the “Unit” field: after you submit and the form resets, the last-picked category remains selected (instead of clearing back to blank).
+This is a clear, actionable request—no further detail needed.
 Step 2 — What Do We Implement?
-Current Behavior:
+Before:
 
-Menu items appear small and potentially cramped in the sidebar
-Icons and text may not be optimally sized for readability
-The overall visual hierarchy might not be as clear as it should be
-User interaction targets (clickable areas) may be too small
-Expected Behavior After Implementation:
+User picks Category → submits → form resets → Category field always reverts to empty.
+After:
 
-Larger menu items: Increased button size for better touch targets and visual prominence
-Better spacing: Improved padding and margins for cleaner appearance
-Enhanced readability: Appropriately sized icons and text labels
-Consistent sizing: All menu items follow the same size standards for visual coherence
-Improved UX: Easier navigation with more comfortable click/tap targets
-Responsive behavior: Proper sizing in both expanded and collapsed states
-Benefits:
+User picks Category “Gardening Tools” → submits → form resets → Category still set to “Gardening Tools.”
+This improves usability when adding many products in the same category.
+Edge cases & decisions:
 
-Better accessibility with larger touch targets
-Enhanced visual hierarchy and readability
-More professional and polished appearance
-Improved user experience across all device sizes
-Consistent with modern UI design standards
+If user changes category mid-form, update the “last chosen” value.
+If user never picks a category, it stays blank.
+Resetting should still clear all other fields (name, price, etc.) but preserve category (and unit).
 Step 3 — How Do We Implement?
-Current Project Analysis:
 
-Sidebar structure: Uses shadcn's sidebar components with proper architecture
-Menu items: Currently using default SidebarMenuButton size
-Styling approach: Tailwind CSS with shadcn component system
-Integration point: app-sidebar.jsx component contains the menu rendering logic
-Available Solutions:
-
-Size prop approach: Use SidebarMenuButton size variants (sm, default, lg)
-Custom styling: Add custom classes to override default sizes
-Global styling: Modify the base sidebar component styles
-Responsive sizing: Different sizes for different screen sizes
-Selected Approach: Use the size="lg" prop on SidebarMenuButton components as it's the most maintainable and follows shadcn's design system patterns. This leverages the built-in size variants rather than custom CSS.
-
-Technical Implementation:
-
-Update SidebarMenuButton components to use size="lg"
-Ensure consistent sizing across all menu items
-Test both expanded and collapsed states
-Verify the spacing works well with the header branding section
+Locate useProductCreationForm in use-product-creation-form.js.
+Mirror the existing “unit” preservation logic:
+Add a const [lastCategory, setLastCategory] = useState(initialValues.categoryId) state.
+const categoryId = watch("categoryId"), then in an effect useEffect(() => setLastCategory(categoryId), [categoryId]).
+In the submission handler (onSubmit), after you call reset(...), supply { …initialValues, unit: lastUnit, categoryId: lastCategory } instead of only preserving unit.
+No new packages needed—reuses React state and react-hook-form’s watch + reset.
 Step 4 — Final Plan Summary
-📁 Files to be updated:
 
-app-sidebar.jsx - Update menu button sizes
-📦 Relevant packages:
-
-No new packages needed - using existing shadcn/ui sidebar components
-SidebarMenuButton size prop variants: sm | default | lg
-🔄 Reused components:
-
-Existing SidebarMenuButton from @/components/ui/sidebar
-Current navigation structure and icon configuration
-💻 Implementation approach:
-
-Modify SidebarMenuButton components to use size="lg" prop
-Ensure consistent sizing across all navigation items
-Test responsive behavior in both collapsed and expanded states
+📁 File to update
+use-product-creation-form.js
+🔄 Reused logic
+Copy/paste the “unit” preservation snippet, adjusting field names from unit → categoryId and lastUnit → lastCategory.
