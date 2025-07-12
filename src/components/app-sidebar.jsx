@@ -2,126 +2,58 @@
 
 "use client";
 
-import Link from "next/link";
-import {
-  LayoutDashboard,
-  Package,
-  Tags,
-  Receipt,
-  Users,
-  Truck,
-  TrendingUp,
-  Settings,
-  Home,
-} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { NavGroup } from "@/components/layout/nav-group";
+import { NavUser } from "@/components/layout/nav-user";
+import { TeamSwitcher } from "@/components/layout/team-switcher";
+import { navigationGroups, companyInfo } from "@/lib/navigation-data";
+import { Home, Command } from "lucide-react";
 
-/**
- * Navigation items configuration
- * @type {Array<{href: string, label: string, icon: React.ComponentType}>}
- */
-const navigationItems = [
+// Teams/workspaces data for the team switcher
+const teams = [
   {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    name: companyInfo.name,
+    logo: companyInfo.icon,
+    plan: companyInfo.description,
   },
   {
-    href: "/dashboard/products",
-    label: "Products",
-    icon: Package,
-  },
-  {
-    href: "/dashboard/categories",
-    label: "Categories",
-    icon: Tags,
-  },
-  {
-    href: "/dashboard/sales",
-    label: "Sales",
-    icon: Receipt,
-  },
-  {
-    href: "/dashboard/customers",
-    label: "Customers",
-    icon: Users,
-  },
-  {
-    href: "/dashboard/suppliers",
-    label: "Suppliers",
-    icon: Truck,
-  },
-  {
-    href: "/dashboard/reports",
-    label: "Reports",
-    icon: TrendingUp,
-  },
-  {
-    href: "/dashboard/settings",
-    label: "Settings",
-    icon: Settings,
+    name: "Acme Store",
+    logo: Command,
+    plan: "Enterprise",
   },
 ];
 
 /**
  * Application Sidebar Component
  *
- * A collapsible sidebar using shadcn/ui sidebar components.
- * Provides navigation for the authenticated dashboard area with:
- * - Collapsible functionality (icon mode when collapsed)
- * - Responsive behavior (overlay on mobile)
- * - Persistent state via cookies
- * - Keyboard shortcuts (Ctrl+B / Cmd+B)
+ * Enhanced sidebar using shadcn-admin design patterns with:
+ * - Team/workspace switcher in header
+ * - Grouped navigation with collapsible sections
+ * - Enhanced user profile in footer
+ * - Modern visual styling and interactions
  *
+ * @param {Object} props
+ * @param {Object} [props.user] - User data for the footer navigation
  * @returns {JSX.Element} Application sidebar component
  */
-export function AppSidebar() {
+export function AppSidebar({ user, ...props }) {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Home className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">RetailManager</span>
-                  <span className="truncate text-xs">Inventory & Finance</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
-
       <SidebarContent>
-        <SidebarMenu>
-          {navigationItems.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild>
-                  <Link href={item.href}>
-                    <IconComponent />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
+        {navigationGroups.map((props) => (
+          <NavGroup key={props.title} {...props} />
+        ))}
       </SidebarContent>
-
+      <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

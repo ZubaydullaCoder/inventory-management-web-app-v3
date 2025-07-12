@@ -74,7 +74,7 @@ _We will build the "Products" feature end-to-end first to serve as the template 
   - Action: Create `src/components/features/products/product-form.jsx`. This Client Component will contain the form fields, use the `useCreateProduct` hook, and auto-focus the first field.
   - Action: Create `src/components/features/products/session-creation-list.jsx`. This Client Component will read the product list from the TanStack Query cache to display optimistically updated items. It will include the "Edit" button and logic to open the editing modal.
 - **Task 3.4: Build the `DataTable` UI (`/products`)**
-  - Action: Create `src/components/features/products/display/product-data-table.jsx`. This file will define the column structure for the products table, including the "Actions" column with an edit dropdown menu.
+  - Action: Create `src/components/features/products/display/product-table-columns.jsx`. This file will define the column structure for the products table, including the "Actions" column with an edit dropdown menu.
   - Action: Create the reusable `src/components/ui/data-table.jsx` component based on the `shadcn/ui` example and `guide-11`.
   - Action: Create `src/app/(dashboard)/inventory/products/page.jsx`. This Server Component will fetch the initial list of products and render a client component and avialable static contents, `ProductDisplayList`, passing the data as `initialData`.
   - Action: Create `src/components/features/products/display/product-display-list.jsx`. This Client Component will use the `useGetProducts` hook (hydrated with `initialData`) and render the reusable `DataTable` with the product data and columns.

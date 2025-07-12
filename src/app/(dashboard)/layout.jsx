@@ -32,13 +32,15 @@ export default async function DashboardLayout({ children }) {
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar />
+      <AppSidebar user={session.user} />
       <SidebarInset>
         {/* Top bar with user navigation and global actions */}
         <TopBar session={session} />
 
-        {/* Page content */}
-        <div className="flex-1 p-6">{children}</div>
+        {/* Page content with proper spacing */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-6">{children}</div>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -1,4 +1,4 @@
-import { Nunito } from "next/font/google";
+import { Inter } from "next/font/google";
 import SessionProviderWrapper from "@/components/providers/SessionProviderWrapper";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { Toaster } from "@/components/ui/sonner";
@@ -6,7 +6,7 @@ import "./globals.css";
 
 // Font setup as per the design guide (guide-12).
 // Using a CSS variable is a robust way to integrate with Tailwind CSS.
-const nunito = Nunito({
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
@@ -32,7 +32,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={nunito.variable}>
+      <body className={inter.variable}>
         {/*
           The SessionProviderWrapper makes the NextAuth.js session available
           to all client components via the `useSession` hook.
