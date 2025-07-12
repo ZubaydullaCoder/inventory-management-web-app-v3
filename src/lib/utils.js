@@ -35,3 +35,27 @@ export function normalizeProductName(name) {
 export function normalizeCategoryName(name) {
   return normalizeProductName(name);
 }
+
+/**
+ * Formats a numeric string/value by inserting spaces as thousand separators.
+ * E.g. "10000" or 10000 → "10 000"
+ *
+ * @param {string|number} value
+ * @returns {string}
+ */
+export function formatNumberWithSpaces(value) {
+  if (value == null) return "";
+  const str = String(value).replace(/\s+/g, "");
+  if (!/^\d+$/.test(str)) return str;
+  return str.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+/**
+ * Parses a formatted numeric string by removing all spaces.
+ *
+ * @param {string} str
+ * @returns {string}
+ */
+export function parseNumberWithSpaces(str) {
+  return String(str).replace(/\s+/g, "");
+}

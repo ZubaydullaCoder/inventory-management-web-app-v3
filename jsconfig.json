@@ -17,6 +17,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["next-env.d.ts", "src/**/*.js", "src/**/*.jsx"],
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.js",
+    "src/**/*.jsx",
+    "app-sidebar.jsx"
+  ],
   "exclude": ["node_modules"]
 }

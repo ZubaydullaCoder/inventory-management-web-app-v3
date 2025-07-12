@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormattedNumberInput } from "@/hooks/use-formatted-number-input";
 import {
   FormField,
   FormItem,
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 
 /**
  * Reusable number input field component for forms.
- * Handles number-specific props and validation.
+ * Handles number-specific props, validation, and auto‐formatting.
  *
  * @param {{
  *   control: any,
@@ -37,25 +38,35 @@ export default function NumberField({
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel className="text-sm font-medium">
-            {label}
-            {required && " *"}
-          </FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              step={step}
-              min={min}
-              placeholder={placeholder}
-              {...field}
-              className="w-full"
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        const { displayValue, handleChange } = useFormattedNumberInput(
+          field.value,
+          field.onChange,
+          step
+        );
+
+        return (
+          <FormItem>
+            <FormLabel className="text-sm font-medium">
+              {label}
+              {required && " *"}
+            </FormLabel>
+            <FormControl>
+              <Input
+                type="text"
+                step={step}
+                min={min}
+                placeholder={placeholder}
+                value={displayValue}
+                onChange={handleChange}
+                onBlur={field.onBlur}
+                className="w-full"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 }
