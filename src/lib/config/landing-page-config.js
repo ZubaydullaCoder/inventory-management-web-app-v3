@@ -76,7 +76,7 @@ export const pricingPlansData = [
   },
   {
     planName: "Standard",
-    price: "$19/month",
+    price: "99,000 so'm/month",
     description: "Most popular choice for growing businesses",
     features: [
       "Up to 1,000 products",
@@ -90,7 +90,7 @@ export const pricingPlansData = [
   },
   {
     planName: "Premium",
-    price: "$39/month",
+    price: "199,000 so'm/month",
     description: "For established shops with advanced needs",
     features: [
       "Unlimited products",

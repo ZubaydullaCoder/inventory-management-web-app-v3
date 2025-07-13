@@ -54,17 +54,19 @@ export default function ProductCreationForm({
             control={control}
             name="sellingPrice"
             label="Selling Price"
-            placeholder="0.00"
-            step="0.01"
+            placeholder="0"
             required
+            decimalScale={0}
+            suffix=" so'm"
           />
           <NumberField
             control={control}
             name="purchasePrice"
             label="Purchase Price"
-            placeholder="0.00"
-            step="0.01"
+            placeholder="0"
             required
+            decimalScale={0}
+            suffix=" so'm"
           />
         </div>
 
@@ -74,12 +76,14 @@ export default function ProductCreationForm({
             name="stock"
             label="Initial Stock"
             placeholder="0"
+            decimalScale={0}
           />
           <NumberField
             control={control}
             name="reorderPoint"
             label="Reorder Point"
             placeholder="0"
+            decimalScale={0}
           />
         </div>
 

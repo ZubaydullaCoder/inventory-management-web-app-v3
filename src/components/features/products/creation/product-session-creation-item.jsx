@@ -2,6 +2,7 @@
 
 import { Pencil, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils";
 
 /**
  * @typedef {Object} ProductSessionItemProps
@@ -21,17 +22,6 @@ export default function ProductSessionCreationItem({
   status,
   onEdit,
 }) {
-  /**
-   * Formats a price value as currency.
-   * @param {number} price
-   * @returns {string}
-   */
-  const formatPrice = (price) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price || 0);
-
   const canEdit =
     status === "success" && product.id && !product.id.startsWith("optimistic");
 
@@ -56,11 +46,11 @@ export default function ProductSessionCreationItem({
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>
               <span className="font-medium">Sell:</span>{" "}
-              {formatPrice(product.sellingPrice)}
+              {formatCurrency(product.sellingPrice)}
             </span>
             <span>
               <span className="font-medium">Cost:</span>{" "}
-              {formatPrice(product.purchasePrice)}
+              {formatCurrency(product.purchasePrice)}
             </span>
           </div>
 
