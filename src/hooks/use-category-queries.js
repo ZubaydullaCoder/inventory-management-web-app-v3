@@ -102,9 +102,15 @@ export function useCreateCategory() {
         );
       }
     },
-    onSuccess: (_data, variables, context) => {
-      // Invalidate category lists to refetch from server
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.lists() });
+    onSuccess: (data, variables, context) => {
+      // Manually update the cache with the returned category data
+      queryClient.setQueryData(queryKeys.categories.lists(), (oldData) => {
+        if (!oldData) return [data];
+        // Replace the optimistic category with the real one
+        return oldData.map((category) =>
+          category.id.startsWith("optimistic-") ? data : category
+        );
+      });
 
       // Invalidate name check for this name
       if (context?.normalizedName) {

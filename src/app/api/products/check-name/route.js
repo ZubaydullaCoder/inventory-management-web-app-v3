@@ -23,14 +23,7 @@ export async function GET(request) {
       return NextResponse.json({ exists: false });
     }
 
-    // Find the shop for the user
-    const shopId = await (async () => {
-      const prisma = (await import("@/lib/prisma")).default;
-      const shop = await prisma.shop.findUnique({
-        where: { ownerId: session.user.id },
-      });
-      return shop?.id || null;
-    })();
+    const shopId = session.user.shopId;
 
     if (!shopId) {
       return NextResponse.json(

@@ -57,7 +57,7 @@ export default function CategoryCreatableSelect({
 
   const { data: categories = [], isLoading: categoriesLoading } =
     useGetCategories();
-  const { mutate: createCategory, isPending: isCreating } = useCreateCategory();
+  const { mutate: createCategory } = useCreateCategory();
 
   // Filter categories based on search input
   const normalizedSearch = normalizeCategoryName(searchValue);
@@ -149,7 +149,6 @@ export default function CategoryCreatableSelect({
                         <CommandItem
                           onSelect={() => handleCreateCategory(field)}
                           className="cursor-pointer"
-                          disabled={isCreating}
                         >
                           <Plus className="mr-2 h-4 w-4" />
                           <span className="font-medium">

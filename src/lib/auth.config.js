@@ -65,12 +65,14 @@ export const authConfig = {
       if (user) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
+          include: { shop: true },
         });
 
-        // Persist the database ID and role to the token.
+        // Persist the database ID, role, and shopId to the token.
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
+          token.shopId = dbUser.shop?.id;
         }
       }
       return token;
@@ -81,10 +83,11 @@ export const authConfig = {
      * This is the missing piece that makes the user ID available to your app.
      */
     async session({ session, token }) {
-      // Transfer the user ID and role from the token to the session object.
+      // Transfer the user ID, role, and shopId from the token to the session object.
       if (token.id && session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.shopId = token.shopId;
       }
       return session;
     },

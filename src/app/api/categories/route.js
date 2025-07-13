@@ -22,18 +22,16 @@ export async function GET(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const shop = await prisma.shop.findUnique({
-      where: { ownerId: session.user.id },
-    });
+    const shopId = session.user.shopId;
 
-    if (!shop) {
+    if (!shopId) {
       return NextResponse.json(
         { error: "Shop not found for user" },
         { status: 404 }
       );
     }
 
-    const categories = await getAllCategoriesByShopId(shop.id);
+    const categories = await getAllCategoriesByShopId(shopId.id);
 
     return NextResponse.json(categories);
   } catch (error) {
