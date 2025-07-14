@@ -37,7 +37,7 @@ export default function NumberField({
   step,
   min = "0",
   required = false,
-  decimalScale = 2,
+  decimalScale = 0,
   allowNegative = false,
   prefix = "",
   suffix = "",

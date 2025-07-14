@@ -178,8 +178,8 @@ model Product {
   id            String   @id @default(cuid())
   name          String
   sku           String?  @unique
-  purchasePrice Decimal
-  sellingPrice  Decimal
+  purchasePrice Int
+  sellingPrice  Int
   stock         Int      @default(0)
   unit          String?  // Unit of measure (e.g., "pieces", "kg", "liters")
   reorderPoint  Int?

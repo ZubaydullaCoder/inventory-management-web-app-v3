@@ -14,11 +14,14 @@ export const productCreateSchema = z.object({
   ),
   sellingPrice: z.preprocess(
     (val) => (val === "" ? undefined : Number(val)),
-    z.number().positive({ message: "Selling price must be a positive number." })
+    z
+      .number()
+      .int()
+      .positive({ message: "Selling price must be a positive number." })
   ),
   purchasePrice: z.preprocess(
     (val) => (val === "" ? undefined : Number(val)),
-    z.number().nonnegative({
+    z.number().int().nonnegative({
       message: "Purchase price must be a positive number or zero.",
     })
   ),
