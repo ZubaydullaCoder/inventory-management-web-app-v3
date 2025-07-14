@@ -4,14 +4,26 @@
 
 /**
  * Fetches a paginated list of products from the API.
- * @param {{page?: number, limit?: number}} filters - Pagination filters.
+ * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string}} options - Pagination, sorting, and filtering options.
  * @returns {Promise<import('@/lib/data/products').PaginatedProductsResult>}
  */
-export async function getProductsApi({ page = 1, limit = 10 }) {
+export async function getProductsApi({
+  page = 1,
+  limit = 10,
+  sortBy,
+  sortOrder,
+  nameFilter,
+  categoryFilter,
+}) {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
   });
+
+  if (sortBy) params.append("sortBy", sortBy);
+  if (sortOrder) params.append("sortOrder", sortOrder);
+  if (nameFilter) params.append("nameFilter", nameFilter);
+  if (categoryFilter) params.append("categoryFilter", categoryFilter);
 
   const response = await fetch(`/api/products?${params.toString()}`);
 

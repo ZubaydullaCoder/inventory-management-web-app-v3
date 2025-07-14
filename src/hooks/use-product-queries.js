@@ -42,14 +42,37 @@ export function useCheckProductName(
 
 /**
  * Hook to fetch paginated products with TanStack Query.
- * @param {{page?: number, limit?: number}} options - Pagination options.
+ * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string}} options - Pagination, sorting, and filtering options.
  * @returns {Object} TanStack Query result object.
  */
 export function useGetProducts(options = {}) {
-  const { page = 1, limit = 10 } = options;
+  const {
+    page = 1,
+    limit = 10,
+    sortBy,
+    sortOrder,
+    nameFilter,
+    categoryFilter,
+  } = options;
+
   return useQuery({
-    queryKey: queryKeys.products.list({ page, limit }),
-    queryFn: () => getProductsApi({ page, limit }),
+    queryKey: queryKeys.products.list({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      nameFilter,
+      categoryFilter,
+    }),
+    queryFn: () =>
+      getProductsApi({
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+        nameFilter,
+        categoryFilter,
+      }),
     staleTime: 5 * 60 * 1000,
   });
 }

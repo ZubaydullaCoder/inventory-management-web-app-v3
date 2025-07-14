@@ -89,7 +89,8 @@ export const productColumns = [
     filterFn: "includesString", // Enable text filtering for product names
   },
   {
-    accessorKey: "category",
+    accessorKey: "category.name",
+    id: "category",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Category" />
     ),
@@ -101,8 +102,13 @@ export const productColumns = [
         </div>
       );
     },
-    enableSorting: false,
+    enableSorting: true,
     enableHiding: true,
+    sortingFn: (rowA, rowB) => {
+      const a = rowA.original.category?.name || "";
+      const b = rowB.original.category?.name || "";
+      return a.localeCompare(b);
+    },
   },
   {
     accessorKey: "sellingPrice",

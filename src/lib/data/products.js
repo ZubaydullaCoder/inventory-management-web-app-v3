@@ -105,20 +105,72 @@ export async function updateProduct(productId, productData, shopId) {
  * Fetches a paginated list of products for a specific shop.
  * Includes category and supplier names for display purposes.
  * @param {string} shopId - The ID of the shop whose products to fetch.
- * @param {{page?: number, limit?: number}} options - Pagination options.
+ * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string}} options - Pagination, sorting, and filtering options.
  * @returns {Promise<PaginatedProductsResult>} An object containing the products and pagination metadata.
  */
-export async function getProductsByShopId(shopId, { page = 1, limit = 10 }) {
+export async function getProductsByShopId(
+  shopId,
+  {
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+    nameFilter = "",
+    categoryFilter = "",
+  }
+) {
   const skip = (page - 1) * limit;
+
+  // Build where clause for filtering
+  const whereClause = { shopId };
+
+  if (nameFilter) {
+    whereClause.name = {
+      contains: nameFilter,
+      mode: "insensitive",
+    };
+  }
+
+  if (categoryFilter) {
+    whereClause.category = {
+      name: {
+        contains: categoryFilter,
+        mode: "insensitive",
+      },
+    };
+  }
+
+  // Build orderBy clause for sorting
+  let orderBy = {};
+
+  switch (sortBy) {
+    case "name":
+      orderBy = { name: sortOrder };
+      break;
+    case "sellingPrice":
+      orderBy = { sellingPrice: sortOrder };
+      break;
+    case "purchasePrice":
+      orderBy = { purchasePrice: sortOrder };
+      break;
+    case "stock":
+      orderBy = { stock: sortOrder };
+      break;
+    case "category":
+      orderBy = { category: { name: sortOrder } };
+      break;
+    case "createdAt":
+    default:
+      orderBy = { createdAt: sortOrder };
+      break;
+  }
 
   const [products, totalProducts] = await prisma.$transaction([
     prisma.product.findMany({
-      where: { shopId },
+      where: whereClause,
       skip: skip,
       take: limit,
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: orderBy,
       // Select only the necessary fields for the list view to optimize performance.
       select: {
         id: true,
@@ -145,7 +197,7 @@ export async function getProductsByShopId(shopId, { page = 1, limit = 10 }) {
       },
     }),
     prisma.product.count({
-      where: { shopId },
+      where: whereClause,
     }),
   ]);
 

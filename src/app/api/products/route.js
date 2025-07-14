@@ -33,7 +33,22 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-    const paginatedData = await getProductsByShopId(shop.id, { page, limit });
+    // Extract sorting parameters
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+
+    // Extract filtering parameters
+    const nameFilter = searchParams.get("nameFilter") || "";
+    const categoryFilter = searchParams.get("categoryFilter") || "";
+
+    const paginatedData = await getProductsByShopId(shop.id, {
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      nameFilter,
+      categoryFilter,
+    });
 
     return NextResponse.json(paginatedData);
   } catch (error) {

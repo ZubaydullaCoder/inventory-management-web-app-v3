@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { DataTable } from "@/components/ui/data-table";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { productColumns } from "./product-table-columns";
 import { useGetProducts } from "@/hooks/use-product-queries";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -94,23 +95,43 @@ export default function ProductDisplayList({
   }
 
   return (
-    <DataTable
-      columns={productColumns}
-      data={products}
-      state={{
-        sorting,
-        columnVisibility,
-        rowSelection,
-        columnFilters,
-        pagination,
-      }}
-      onStateChange={handleStateChange}
-      manualPagination={true}
-      manualSorting={true}
-      manualFiltering={true}
-      pageCount={pageCount}
-      showToolbar={true}
-    />
+    <div className="space-y-4">
+      <DataTableToolbar
+        table={{
+          getColumn: (id) => ({
+            getFilterValue: () =>
+              columnFilters.find((f) => f.id === id)?.value || "",
+            setFilterValue: (value) => {
+              setColumnFilters((prev) => {
+                const withoutCurrent = prev.filter((f) => f.id !== id);
+                return value
+                  ? [...withoutCurrent, { id, value }]
+                  : withoutCurrent;
+              });
+            },
+          }),
+          resetColumnFilters: () => setColumnFilters([]),
+          getState: () => ({ columnFilters }),
+          getSelectedRowModel: () => ({ rows: [] }), // Not using selection in this context
+        }}
+      />
+      <DataTable
+        columns={productColumns}
+        data={products}
+        state={{
+          sorting,
+          columnVisibility,
+          rowSelection,
+          columnFilters,
+          pagination,
+        }}
+        onStateChange={handleStateChange}
+        manualPagination={true}
+        manualSorting={true}
+        manualFiltering={true}
+        pageCount={pageCount}
+      />
+    </div>
   );
 }
 

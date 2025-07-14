@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
  * @param {boolean} [props.manualSorting] - Whether sorting is handled manually
  * @param {boolean} [props.manualFiltering] - Whether filtering is handled manually
  * @param {number} [props.pageCount] - Total page count for manual pagination
+ * @param {boolean} [props.showToolbar] - Whether to show the toolbar
  * @param {string} [props.className] - Additional CSS classes
  */
 export function DataTable({
@@ -42,6 +44,7 @@ export function DataTable({
   manualSorting = false,
   manualFiltering = false,
   pageCount = -1,
+  showToolbar = false,
   className,
   ...props
 }) {
@@ -83,6 +86,7 @@ export function DataTable({
 
   return (
     <div className={cn("space-y-4", className)} {...props}>
+      {showToolbar && <DataTableToolbar table={table} />}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
