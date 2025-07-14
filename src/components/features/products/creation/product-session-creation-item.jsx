@@ -2,7 +2,7 @@
 
 import { Pencil, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
+import { NumericFormat } from "react-number-format";
 
 /**
  * @typedef {Object} ProductSessionItemProps
@@ -46,11 +46,23 @@ export default function ProductSessionCreationItem({
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>
               <span className="font-medium">Sell:</span>{" "}
-              {formatCurrency(product.sellingPrice)}
+              <NumericFormat
+                value={product.sellingPrice}
+                displayType="text"
+                thousandSeparator=" "
+                decimalScale={0}
+                suffix=" so'm"
+              />
             </span>
             <span>
               <span className="font-medium">Cost:</span>{" "}
-              {formatCurrency(product.purchasePrice)}
+              <NumericFormat
+                value={product.purchasePrice}
+                displayType="text"
+                thousandSeparator=" "
+                decimalScale={0}
+                suffix=" so'm"
+              />
             </span>
           </div>
 

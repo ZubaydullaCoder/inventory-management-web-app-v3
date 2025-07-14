@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import ProductEditModal from "@/components/features/products/edit/product-edit-modal";
+import { NumericFormat } from "react-number-format";
 
 /**
  * Actions cell component for the products table.
@@ -109,13 +110,19 @@ export const productColumns = [
       <DataTableColumnHeader column={column} title="Price" />
     ),
     cell: ({ row }) => {
+      // Use the value directly, do NOT divide by 100
       const price = row.getValue("sellingPrice");
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(price / 100); // Convert from cents to dollars
-
-      return <div className="font-medium">{formatted}</div>;
+      return (
+        <div className="font-medium">
+          <NumericFormat
+            value={price}
+            displayType="text"
+            thousandSeparator=" "
+            decimalScale={0}
+            suffix=" so'm"
+          />
+        </div>
+      );
     },
     enableSorting: true,
     enableHiding: true,
@@ -147,13 +154,19 @@ export const productColumns = [
       <DataTableColumnHeader column={column} title="Cost" />
     ),
     cell: ({ row }) => {
+      // Use the value directly, do NOT divide by 100
       const cost = row.getValue("purchasePrice");
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(cost / 100); // Convert from cents to dollars
-
-      return <div className="text-muted-foreground">{formatted}</div>;
+      return (
+        <div className="text-muted-foreground">
+          <NumericFormat
+            value={cost}
+            displayType="text"
+            thousandSeparator=" "
+            decimalScale={0}
+            suffix=" so'm"
+          />
+        </div>
+      );
     },
     enableSorting: true,
     enableHiding: true,
