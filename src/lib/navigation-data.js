@@ -59,12 +59,17 @@ export const navigationGroups = [
         items: [
           {
             title: "Products",
-            url: "/dashboard/products",
+            url: "/inventory/products",
+            icon: Package,
+          },
+          {
+            title: "Add Products",
+            url: "/inventory/products/new",
             icon: Package,
           },
           {
             title: "Categories",
-            url: "/dashboard/categories",
+            url: "/inventory/categories",
             icon: Tags,
           },
         ],

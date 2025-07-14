@@ -126,10 +126,12 @@ export async function getProductsByShopId(shopId, { page = 1, limit = 10 }) {
         sellingPrice: true,
         purchasePrice: true,
         stock: true,
+        unit: true,
         reorderPoint: true,
         categoryId: true,
         supplierId: true,
         isActive: true,
+        createdAt: true,
         category: {
           select: {
             name: true,
