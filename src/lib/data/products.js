@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { normalizeProductName } from "@/lib/utils";
+import fuzzysort from "fuzzysort";
 
 /**
  * @typedef {import('@/lib/zod-schemas').productCreateSchema} ProductCreateInput
@@ -121,15 +122,7 @@ export async function getProductsByShopId(
 ) {
   const skip = (page - 1) * limit;
 
-  // Build where clause for filtering
   const whereClause = { shopId };
-
-  if (nameFilter) {
-    whereClause.name = {
-      contains: nameFilter,
-      mode: "insensitive",
-    };
-  }
 
   if (categoryFilter) {
     whereClause.category = {
@@ -165,13 +158,14 @@ export async function getProductsByShopId(
       break;
   }
 
-  const [products, totalProducts] = await prisma.$transaction([
-    prisma.product.findMany({
+  // Fetch all candidates if nameFilter is present, otherwise paginate normally
+  let products, totalProducts;
+  if (nameFilter) {
+    // Fetch all products for the shop (with category filter if present)
+    const allProducts = await prisma.product.findMany({
       where: whereClause,
-      skip: skip,
-      take: limit,
-      orderBy: orderBy,
-      // Select only the necessary fields for the list view to optimize performance.
+      // Let fuzzysort handle sorting by relevance
+      orderBy: sortBy !== "name" ? orderBy : undefined,
       select: {
         id: true,
         name: true,
@@ -184,22 +178,48 @@ export async function getProductsByShopId(
         supplierId: true,
         isActive: true,
         createdAt: true,
-        category: {
-          select: {
-            name: true,
-          },
-        },
-        supplier: {
-          select: {
-            name: true,
-          },
-        },
+        category: { select: { name: true } },
+        supplier: { select: { name: true } },
       },
-    }),
-    prisma.product.count({
-      where: whereClause,
-    }),
-  ]);
+    });
+
+    // Use fuzzysort for powerful, tolerant filtering
+    const results = fuzzysort.go(nameFilter, allProducts, {
+      key: "name",
+      threshold: -10000, // Lower threshold for more tolerant matching
+    });
+
+    const filtered = results.map((result) => result.obj);
+
+    totalProducts = filtered.length;
+    products = filtered.slice(skip, skip + limit);
+  } else {
+    // Standard paginated query
+    [products, totalProducts] = await prisma.$transaction([
+      prisma.product.findMany({
+        where: whereClause,
+        skip: skip,
+        take: limit,
+        orderBy,
+        select: {
+          id: true,
+          name: true,
+          sellingPrice: true,
+          purchasePrice: true,
+          stock: true,
+          unit: true,
+          reorderPoint: true,
+          categoryId: true,
+          supplierId: true,
+          isActive: true,
+          createdAt: true,
+          category: { select: { name: true } },
+          supplier: { select: { name: true } },
+        },
+      }),
+      prisma.product.count({ where: whereClause }),
+    ]);
+  }
 
   return {
     products,

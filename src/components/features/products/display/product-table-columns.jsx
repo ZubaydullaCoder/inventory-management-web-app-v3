@@ -82,7 +82,7 @@ export const productColumns = [
     ),
     cell: ({ row }) => {
       const name = row.getValue("name");
-      return <div className="font-medium">{name}</div>;
+      return <div className="font-medium text-primary">{name}</div>;
     },
     enableSorting: true,
     enableHiding: false,
@@ -119,7 +119,7 @@ export const productColumns = [
       // Use the value directly, do NOT divide by 100
       const price = row.getValue("sellingPrice");
       return (
-        <div className="font-medium">
+        <div className="text-muted-foreground">
           <NumericFormat
             value={price}
             displayType="text"
