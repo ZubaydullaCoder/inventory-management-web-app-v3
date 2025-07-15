@@ -73,7 +73,8 @@ export function DataTable({
     onSortingChange: onStateChange?.onSortingChange || setSorting,
     onColumnFiltersChange:
       onStateChange?.onColumnFiltersChange || setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange:
+      onStateChange?.onColumnVisibilityChange || setColumnVisibility,
     onPaginationChange: onStateChange?.onPaginationChange || setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

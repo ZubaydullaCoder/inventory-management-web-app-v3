@@ -74,6 +74,7 @@ export default function ProductDisplayList({
       onPaginationChange: setPagination,
       onSortingChange: setSorting,
       onColumnFiltersChange: setColumnFilters,
+      onColumnVisibilityChange: setColumnVisibility, // <-- ADD THIS LINE
     }),
     []
   );
