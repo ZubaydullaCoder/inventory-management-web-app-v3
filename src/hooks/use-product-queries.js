@@ -167,6 +167,29 @@ export function useUpdateProduct() {
         oldNormalizedName = normalizeProductName(existingProduct.name);
       }
 
+      // Get cached categories to resolve category relationship
+      const categoriesData = queryClient.getQueryData(
+        queryKeys.categories.lists()
+      );
+      const categories = Array.isArray(categoriesData) ? categoriesData : [];
+
+      // Resolve category object from categoryId
+      let resolvedCategory = null;
+      if (productData.categoryId) {
+        resolvedCategory = categories.find(
+          (cat) => cat.id === productData.categoryId
+        );
+
+        // If category not found in cache, create a placeholder with the ID
+        // This ensures the optimistic update works even if categories aren't fully loaded
+        if (!resolvedCategory) {
+          resolvedCategory = {
+            id: productData.categoryId,
+            name: "Loading...", // Placeholder that will be updated when server responds
+          };
+        }
+      }
+
       // Cancel outgoing fetches for product lists
       await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
 
@@ -175,7 +198,7 @@ export function useUpdateProduct() {
         queryKey: queryKeys.products.lists(),
       });
 
-      // Optimistically update all cached product lists
+      // Optimistically update all cached product lists with resolved category
       queryClient
         .getQueryCache()
         .findAll(queryKeys.products.lists())
@@ -186,7 +209,12 @@ export function useUpdateProduct() {
               ...oldData,
               products: oldData.products.map((product) =>
                 product.id === productId
-                  ? { ...product, ...productData, name: normalizedName }
+                  ? {
+                      ...product,
+                      ...productData,
+                      name: normalizedName,
+                      category: resolvedCategory, // Include resolved category object
+                    }
                   : product
               ),
             });
@@ -206,6 +234,9 @@ export function useUpdateProduct() {
     onSuccess: (_data, variables, context) => {
       // Invalidate product lists to refetch from server
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+
+      // Invalidate categories in case a new category was created during the product update
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.lists() });
 
       // --- ENHANCED: Invalidate ALL name check variations for both old and new names ---
       // This ensures creation form cache is properly cleared

@@ -174,16 +174,14 @@ export function useProductEditForm({ product, isOpen, onSuccess, onClose }) {
         categoryId: values.categoryId || undefined,
         supplierId: values.supplierId || undefined,
       };
-
-      // Optimistically update parent and close modal immediately
-      onSuccess?.({ ...product, ...processed });
       onClose();
-
       updateProduct(
         { productId: product.id, productData: processed },
         {
           onSuccess: (updatedProduct) => {
             toast.success("Product updated successfully!");
+            onSuccess?.(updatedProduct);
+            // onClose();
           },
           onError: (err) => {
             const msg = err.message.includes("already exists")
