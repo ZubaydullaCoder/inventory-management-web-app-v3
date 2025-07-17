@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
  * @param {boolean} [props.manualFiltering] - Whether filtering is handled manually
  * @param {number} [props.pageCount] - Total page count for manual pagination
  * @param {boolean} [props.showToolbar] - Whether to show the toolbar
+ * @param {boolean} [props.isLoading] - Loading state for selective skeleton rendering
  * @param {string} [props.className] - Additional CSS classes
  */
 export function DataTable({
@@ -45,6 +46,7 @@ export function DataTable({
   manualFiltering = false,
   pageCount = -1,
   showToolbar = false,
+  isLoading = false,
   className,
   ...props
 }) {
@@ -117,9 +119,14 @@ export function DataTable({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+                      {/* Show skeleton for loading data, normal content otherwise */}
+                      {isLoading && row.original.isLoading ? (
+                        <TableCellSkeleton columnId={cell.column.id} />
+                      ) : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
                       )}
                     </TableCell>
                   ))}
@@ -139,6 +146,34 @@ export function DataTable({
         </Table>
       </div>
       <DataTablePagination table={table} />
+    </div>
+  );
+}
+
+/**
+ * Skeleton component for individual table cells based on column type.
+ * @param {Object} props
+ * @param {string} props.columnId - The column ID to determine skeleton style
+ */
+function TableCellSkeleton({ columnId }) {
+  // Different skeleton widths based on typical column content
+  const skeletonStyles = {
+    name: "h-4 w-[120px]", // Product names are typically longer
+    sellingPrice: "h-4 w-[60px]", // Prices are shorter
+    purchasePrice: "h-4 w-[60px]",
+    stock: "h-4 w-[40px]", // Stock numbers are short
+    unit: "h-4 w-[50px]", // Units are short
+    category: "h-4 w-[80px]", // Category names are medium
+    supplier: "h-4 w-[80px]", // Supplier names are medium
+    actions: "h-4 w-[80px]", // Action buttons are consistent
+    default: "h-4 w-[60px]", // Default fallback
+  };
+
+  const skeletonClass = skeletonStyles[columnId] || skeletonStyles.default;
+
+  return (
+    <div className="animate-pulse">
+      <div className={cn("bg-muted rounded", skeletonClass)} />
     </div>
   );
 }

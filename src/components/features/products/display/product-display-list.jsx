@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDebounce } from "use-debounce";
 import { DataTable } from "@/components/ui/data-table";
 import { productColumns } from "./product-table-columns";
 import { useGetProducts } from "@/hooks/use-product-queries";
@@ -22,7 +23,6 @@ export default function ProductDisplayList({
   initialPage = 1,
   initialLimit = 10,
 }) {
-  console.log("initialData:", initialData);
   // State for table operations
   const [pagination, setPagination] = React.useState({
     pageIndex: initialPage - 1,
@@ -33,7 +33,15 @@ export default function ProductDisplayList({
   const [columnVisibility, setColumnVisibility] = React.useState({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  // Convert TanStack Table state to API parameters
+  // Convert TanStack Table state to API parameters with debounced filters
+  const nameFilter = columnFilters.find((f) => f.id === "name")?.value || "";
+  const categoryFilter =
+    columnFilters.find((f) => f.id === "category")?.value || "";
+
+  // Debounce filter values to reduce rapid API calls (300ms is optimal for search UX)
+  const [debouncedNameFilter] = useDebounce(nameFilter, 300);
+  const [debouncedCategoryFilter] = useDebounce(categoryFilter, 300);
+
   const apiParams = React.useMemo(() => {
     const params = {
       page: pagination.pageIndex + 1,
@@ -47,23 +55,21 @@ export default function ProductDisplayList({
       params.sortOrder = sort.desc ? "desc" : "asc";
     }
 
-    // Add filtering parameters
-    const nameFilter = columnFilters.find((f) => f.id === "name");
-    if (nameFilter) {
-      params.nameFilter = nameFilter.value;
+    // Add debounced filtering parameters
+    if (debouncedNameFilter) {
+      params.nameFilter = debouncedNameFilter;
     }
 
-    const categoryFilter = columnFilters.find((f) => f.id === "category");
-    if (categoryFilter) {
-      params.categoryFilter = categoryFilter.value;
+    if (debouncedCategoryFilter) {
+      params.categoryFilter = debouncedCategoryFilter;
     }
 
     return params;
-  }, [pagination, sorting, columnFilters]);
+  }, [pagination, sorting, debouncedNameFilter, debouncedCategoryFilter]);
 
   // Fetch data with current parameters
   const { data: productsData, isLoading, error } = useGetProducts(apiParams);
-  console.log("loading state of productsData:", isLoading);
+
   // Use server data if available, fallback to initial data
   const products = productsData?.products || (isLoading ? [] : initialData);
   const totalProducts = productsData?.totalProducts || initialData.length;
@@ -95,10 +101,26 @@ export default function ProductDisplayList({
     return <ProductTableSkeleton />;
   }
 
+  // Create skeleton data for loading overlay while preserving table structure
+  const displayData =
+    isLoading && products.length === 0
+      ? Array.from({ length: pagination.pageSize }, (_, i) => ({
+          id: `skeleton-${i}`,
+          name: `skeleton-${i}`,
+          sellingPrice: 0,
+          purchasePrice: 0,
+          stock: 0,
+          unit: "",
+          category: { name: "skeleton" },
+          supplier: { name: "skeleton" },
+          isLoading: true,
+        }))
+      : products;
+
   return (
     <DataTable
       columns={productColumns}
-      data={products}
+      data={displayData}
       state={{
         sorting,
         columnVisibility,
@@ -112,6 +134,7 @@ export default function ProductDisplayList({
       manualFiltering={true}
       pageCount={pageCount}
       showToolbar={true}
+      isLoading={isLoading} // Pass loading state to DataTable for selective skeletons
     />
   );
 }
