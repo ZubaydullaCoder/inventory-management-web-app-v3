@@ -4,7 +4,7 @@
 
 /**
  * Fetches a paginated list of products from the API.
- * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string}} options - Pagination, sorting, and filtering options.
+ * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, enableFuzzySearch?: boolean}} options - Pagination, sorting, and filtering options.
  * @returns {Promise<import('@/lib/data/products').PaginatedProductsResult>}
  */
 export async function getProductsApi({
@@ -14,6 +14,7 @@ export async function getProductsApi({
   sortOrder,
   nameFilter,
   categoryFilter,
+  enableFuzzySearch = true,
 }) {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -24,6 +25,7 @@ export async function getProductsApi({
   if (sortOrder) params.append("sortOrder", sortOrder);
   if (nameFilter) params.append("nameFilter", nameFilter);
   if (categoryFilter) params.append("categoryFilter", categoryFilter);
+  if (enableFuzzySearch !== undefined) params.append("enableFuzzySearch", enableFuzzySearch.toString());
 
   const response = await fetch(`/api/products?${params.toString()}`);
 

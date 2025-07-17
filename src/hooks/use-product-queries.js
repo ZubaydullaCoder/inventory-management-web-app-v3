@@ -18,7 +18,7 @@ import {
  */
 export function useCheckProductName(
   name,
-  { enabled = true, excludeId, staleTime = Infinity } = {}
+  { enabled = true, excludeId, staleTime = 10 * 60 * 1000 } = {} // 10 minutes default
 ) {
   const normalizedName = normalizeProductName(name);
 
@@ -35,14 +35,17 @@ export function useCheckProductName(
     },
     enabled: enabled && Boolean(normalizedName),
     staleTime, // Accept staleTime as parameter for different cache strategies
+    gcTime: 15 * 60 * 1000, // Keep in cache longer for name checks
     retry: 1,
-    refetchOnMount: false, // don’t auto refetch when component mounts
+    refetchOnMount: false, // don't auto refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 }
 
 /**
  * Hook to fetch paginated products with TanStack Query.
- * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string}} options - Pagination, sorting, and filtering options.
+ * Uses granular caching strategy optimized for product data volatility.
+ * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, enableFuzzySearch?: boolean}} options - Pagination, sorting, and filtering options.
  * @returns {Object} TanStack Query result object.
  */
 export function useGetProducts(options = {}) {
@@ -53,6 +56,7 @@ export function useGetProducts(options = {}) {
     sortOrder,
     nameFilter,
     categoryFilter,
+    enableFuzzySearch = true,
   } = options;
 
   return useQuery({
@@ -63,6 +67,7 @@ export function useGetProducts(options = {}) {
       sortOrder,
       nameFilter,
       categoryFilter,
+      enableFuzzySearch,
     }),
     queryFn: () =>
       getProductsApi({
@@ -72,8 +77,12 @@ export function useGetProducts(options = {}) {
         sortOrder,
         nameFilter,
         categoryFilter,
+        enableFuzzySearch,
       }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes - products change frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus for better UX
+    refetchOnMount: "always", // Always refetch on mount to ensure fresh data
   });
 }
 

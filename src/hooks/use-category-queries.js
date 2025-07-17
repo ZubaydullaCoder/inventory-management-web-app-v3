@@ -16,13 +16,16 @@ import { toast } from "sonner";
 
 /**
  * Hook to fetch all categories with TanStack Query.
+ * Uses longer cache time since categories change less frequently than products.
  * @returns {Object} TanStack Query result object.
  */
 export function useGetCategories() {
   return useQuery({
     queryKey: queryKeys.categories.lists(),
     queryFn: getCategoriesApi,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - categories change less frequently
+    gcTime: 15 * 60 * 1000, // Keep in cache longer
+    refetchOnWindowFocus: false,
   });
 }
 

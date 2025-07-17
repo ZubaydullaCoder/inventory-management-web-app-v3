@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getProductsByShopId } from "@/lib/data/products";
+import { cachedProductQueries } from "@/lib/cache/react-cache";
 import ProductDisplayList from "@/components/features/products/display/product-display-list";
 
 /**
@@ -26,10 +26,13 @@ export default async function ProductsPage({ searchParams }) {
   let error = null;
 
   try {
-    const result = await getProductsByShopId(session.user.shopId, {
-      page,
-      limit,
-    });
+    const result = await cachedProductQueries.getProductsByShopId(
+      session.user.shopId,
+      {
+        page,
+        limit,
+      }
+    );
     initialData = result.products;
   } catch (err) {
     console.error("Failed to fetch products:", err);

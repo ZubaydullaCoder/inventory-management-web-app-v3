@@ -40,6 +40,7 @@ export async function GET(request) {
     // Extract filtering parameters
     const nameFilter = searchParams.get("nameFilter") || "";
     const categoryFilter = searchParams.get("categoryFilter") || "";
+    const enableFuzzySearch = searchParams.get("enableFuzzySearch") !== "false"; // Default to true
 
     const paginatedData = await getProductsByShopId(shop.id, {
       page,
@@ -48,6 +49,7 @@ export async function GET(request) {
       sortOrder,
       nameFilter,
       categoryFilter,
+      enableFuzzySearch,
     });
 
     return NextResponse.json(paginatedData);
