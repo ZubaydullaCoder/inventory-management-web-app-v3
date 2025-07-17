@@ -25,7 +25,8 @@ export async function getProductsApi({
   if (sortOrder) params.append("sortOrder", sortOrder);
   if (nameFilter) params.append("nameFilter", nameFilter);
   if (categoryFilter) params.append("categoryFilter", categoryFilter);
-  if (enableFuzzySearch !== undefined) params.append("enableFuzzySearch", enableFuzzySearch.toString());
+  if (enableFuzzySearch !== undefined)
+    params.append("enableFuzzySearch", enableFuzzySearch.toString());
 
   const response = await fetch(`/api/products?${params.toString()}`);
 
@@ -91,6 +92,42 @@ export async function checkProductNameApi(name, excludeId) {
   const response = await fetch(`/api/products/check-name?${params.toString()}`);
   if (!response.ok) {
     throw new Error("Failed to check product name");
+  }
+  return response.json();
+}
+
+/**
+ * Fetches products using cursor-based pagination from the API.
+ * @param {{cursor?: string, direction?: 'forward'|'backward', limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, enableFuzzySearch?: boolean}} options - Cursor pagination, sorting, and filtering options.
+ * @returns {Promise<import('@/lib/data/products').CursorPaginatedProductsResult>}
+ */
+export async function getProductsCursorApi({
+  cursor = null,
+  direction = "forward",
+  limit = 10,
+  sortBy,
+  sortOrder,
+  nameFilter,
+  categoryFilter,
+  enableFuzzySearch = true,
+}) {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    direction,
+  });
+
+  if (cursor) params.append("cursor", cursor);
+  if (sortBy) params.append("sortBy", sortBy);
+  if (sortOrder) params.append("sortOrder", sortOrder);
+  if (nameFilter) params.append("nameFilter", nameFilter);
+  if (categoryFilter) params.append("categoryFilter", categoryFilter);
+  if (enableFuzzySearch !== undefined)
+    params.append("enableFuzzySearch", enableFuzzySearch.toString());
+
+  const response = await fetch(`/api/products/cursor?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch products with cursor pagination");
   }
   return response.json();
 }

@@ -124,6 +124,16 @@ export async function updateProduct(productId, productData, shopId) {
  */
 
 /**
+ * @typedef {object} CursorPaginatedProductsResult
+ * @property {Array<object>} products - The array of fetched products.
+ * @property {string|null} nextCursor - Cursor for the next page, null if no more pages.
+ * @property {string|null} prevCursor - Cursor for the previous page, null if first page.
+ * @property {boolean} hasNextPage - Whether there are more pages after this one.
+ * @property {boolean} hasPrevPage - Whether there are pages before this one.
+ * @property {number} totalProducts - The total number of products (for pagination UI).
+ */
+
+/**
  * Fetches a paginated list of products for a specific shop.
  * Includes category and supplier names for display purposes.
  * Uses optimized database-level filtering with fuzzy search capabilities.
@@ -276,4 +286,376 @@ export async function getProductsByShopId(
     console.error("Error fetching products:", error);
     throw new Error("Failed to fetch products");
   }
+}
+
+/**
+ * Fetches products using cursor-based (keyset) pagination for better performance.
+ * This approach scales better than offset-based pagination for large datasets.
+ * @param {string} shopId - The ID of the shop whose products to fetch.
+ * @param {{
+ *   cursor?: string,
+ *   direction?: 'forward'|'backward',
+ *   limit?: number,
+ *   sortBy?: string,
+ *   sortOrder?: string,
+ *   nameFilter?: string,
+ *   categoryFilter?: string,
+ *   enableFuzzySearch?: boolean
+ * }} options - Cursor pagination and filtering options.
+ * @returns {Promise<CursorPaginatedProductsResult>} Products with cursor pagination metadata.
+ */
+export async function getProductsByShopIdCursor(
+  shopId,
+  {
+    cursor = null,
+    direction = "forward",
+    limit = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+    nameFilter = "",
+    categoryFilter = "",
+    enableFuzzySearch = true,
+  }
+) {
+  try {
+    const trimmedNameFilter = nameFilter ? nameFilter.trim() : "";
+
+    // Handle fuzzy search first if enabled
+    if (enableFuzzySearch && trimmedNameFilter) {
+      return await getCursorPaginatedFuzzySearchResults(
+        shopId,
+        trimmedNameFilter,
+        {
+          cursor,
+          direction,
+          limit,
+          sortBy,
+          sortOrder,
+          categoryFilter,
+        }
+      );
+    }
+
+    // Build where clause for standard filtering
+    const whereClause = {
+      shopId,
+      ...(trimmedNameFilter && {
+        name: {
+          contains: trimmedNameFilter,
+          mode: "insensitive",
+        },
+      }),
+      ...(categoryFilter &&
+        categoryFilter.trim() && {
+          categoryId: categoryFilter.trim(),
+        }),
+    };
+
+    // Build cursor condition for pagination
+    const cursorCondition = buildCursorCondition(
+      cursor,
+      sortBy,
+      sortOrder,
+      direction
+    );
+    if (cursorCondition) {
+      Object.assign(whereClause, cursorCondition);
+    }
+
+    // Build ORDER BY clause
+    const orderBy = buildOrderByClause(sortBy, sortOrder);
+
+    // Optimized field selection
+    const selectFields = {
+      id: true,
+      name: true,
+      sellingPrice: true,
+      purchasePrice: true,
+      stock: true,
+      unit: true,
+      createdAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      supplier: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    };
+
+    // Fetch one extra item to determine if there are more pages
+    const take = limit + 1;
+    const actualDirection =
+      direction === "backward" ? reverseOrder(orderBy) : orderBy;
+
+    const [products, totalProducts] = await Promise.all([
+      prisma.product.findMany({
+        where: whereClause,
+        orderBy: actualDirection,
+        take,
+        select: selectFields,
+      }),
+      // Only count when necessary (expensive operation)
+      cursor === null
+        ? prisma.product.count({ where: { shopId } })
+        : Promise.resolve(0),
+    ]);
+
+    // Handle backward pagination (reverse the results)
+    const orderedProducts =
+      direction === "backward" ? products.reverse() : products;
+
+    // Check if there are more pages
+    const hasNextPage =
+      direction === "forward" ? orderedProducts.length > limit : false;
+    const hasPrevPage =
+      direction === "backward"
+        ? orderedProducts.length > limit
+        : Boolean(cursor);
+
+    // Remove the extra item if present
+    const finalProducts = orderedProducts.slice(0, limit);
+
+    // Generate cursors for next/previous pages
+    const nextCursor =
+      hasNextPage && finalProducts.length > 0
+        ? generateCursor(finalProducts[finalProducts.length - 1], sortBy)
+        : null;
+
+    const prevCursor =
+      hasPrevPage && finalProducts.length > 0
+        ? generateCursor(finalProducts[0], sortBy)
+        : null;
+
+    return {
+      products: finalProducts,
+      nextCursor,
+      prevCursor,
+      hasNextPage,
+      hasPrevPage,
+      totalProducts: totalProducts || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching products with cursor pagination:", error);
+    throw new Error("Failed to fetch products");
+  }
+}
+
+/**
+ * Helper function to build cursor condition for WHERE clause
+ * @param {string|null} cursor - The cursor value
+ * @param {string} sortBy - Sort field
+ * @param {string} sortOrder - Sort order
+ * @param {string} direction - Pagination direction
+ * @returns {object|null} Cursor condition for WHERE clause
+ */
+function buildCursorCondition(cursor, sortBy, sortOrder, direction) {
+  if (!cursor) return null;
+
+  try {
+    const cursorData = JSON.parse(Buffer.from(cursor, "base64").toString());
+    const { value, id } = cursorData;
+
+    const isForward = direction === "forward";
+    const isDesc = sortOrder === "desc";
+
+    // Determine comparison operator based on direction and sort order
+    let operator;
+    if (isForward) {
+      operator = isDesc ? "lt" : "gt";
+    } else {
+      operator = isDesc ? "gt" : "lt";
+    }
+
+    if (sortBy === "createdAt") {
+      return {
+        OR: [
+          { createdAt: { [operator]: value } },
+          {
+            createdAt: value,
+            id: { [operator]: id },
+          },
+        ],
+      };
+    } else if (sortBy === "name") {
+      return {
+        OR: [
+          { name: { [operator]: value } },
+          {
+            name: value,
+            id: { [operator]: id },
+          },
+        ],
+      };
+    } else {
+      // For other fields, use similar pattern
+      return {
+        OR: [
+          { [sortBy]: { [operator]: value } },
+          {
+            [sortBy]: value,
+            id: { [operator]: id },
+          },
+        ],
+      };
+    }
+  } catch (error) {
+    console.error("Invalid cursor format:", error);
+    return null;
+  }
+}
+
+/**
+ * Helper function to build ORDER BY clause
+ * @param {string} sortBy - Sort field
+ * @param {string} sortOrder - Sort order
+ * @returns {object} ORDER BY clause
+ */
+function buildOrderByClause(sortBy, sortOrder) {
+  if (sortBy === "category") {
+    return [
+      { category: { name: sortOrder } },
+      { id: sortOrder }, // Secondary sort for consistency
+    ];
+  } else {
+    return [
+      { [sortBy]: sortOrder },
+      { id: sortOrder }, // Secondary sort for consistency
+    ];
+  }
+}
+
+/**
+ * Helper function to reverse order for backward pagination
+ * @param {object} orderBy - Original order by clause
+ * @returns {object} Reversed order by clause
+ */
+function reverseOrder(orderBy) {
+  return orderBy.map((order) => {
+    const field = Object.keys(order)[0];
+    const direction = Object.values(order)[0];
+
+    if (typeof direction === "object") {
+      // Handle nested ordering (like category.name)
+      const nestedField = Object.keys(direction)[0];
+      const nestedDirection = direction[nestedField];
+      return {
+        [field]: {
+          [nestedField]: nestedDirection === "asc" ? "desc" : "asc",
+        },
+      };
+    } else {
+      // Handle simple ordering
+      return { [field]: direction === "asc" ? "desc" : "asc" };
+    }
+  });
+}
+
+/**
+ * Helper function to generate cursor from a product record
+ * @param {object} product - Product record
+ * @param {string} sortBy - Sort field
+ * @returns {string} Base64 encoded cursor
+ */
+function generateCursor(product, sortBy) {
+  const cursorData = {
+    id: product.id,
+    value:
+      sortBy === "category" ? product.category?.name || "" : product[sortBy],
+  };
+
+  return Buffer.from(JSON.stringify(cursorData)).toString("base64");
+}
+
+/**
+ * Handle cursor-based pagination for fuzzy search results
+ * @param {string} shopId - Shop ID
+ * @param {string} query - Search query
+ * @param {object} options - Pagination options
+ * @returns {Promise<CursorPaginatedProductsResult>} Paginated fuzzy search results
+ */
+async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
+  const { cursor, direction, limit, sortBy, sortOrder, categoryFilter } =
+    options;
+
+  // For fuzzy search, we need to get all results first, then apply cursor pagination
+  // This is a limitation of complex fuzzy search queries
+  const fuzzyResults = await fuzzySearchProducts(shopId, query, limit * 5); // Get more results
+
+  // Apply category filter if specified
+  let filteredResults = fuzzyResults;
+  if (categoryFilter && categoryFilter.trim()) {
+    filteredResults = fuzzyResults.filter(
+      (product) => product.category?.id === categoryFilter.trim()
+    );
+  }
+
+  // Apply sorting if not relevance-based
+  if (sortBy !== "createdAt" && sortBy !== "similarity") {
+    filteredResults.sort((a, b) => {
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
+
+      if (sortBy === "category") {
+        aValue = a.category?.name || "";
+        bValue = b.category?.name || "";
+      }
+
+      if (sortOrder === "desc") {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      } else {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      }
+    });
+  }
+
+  // Apply cursor-based pagination to in-memory results
+  let startIndex = 0;
+  if (cursor) {
+    try {
+      const cursorData = JSON.parse(Buffer.from(cursor, "base64").toString());
+      const cursorId = cursorData.id;
+
+      const cursorIndex = filteredResults.findIndex((p) => p.id === cursorId);
+      if (cursorIndex !== -1) {
+        startIndex =
+          direction === "forward"
+            ? cursorIndex + 1
+            : Math.max(0, cursorIndex - limit);
+      }
+    } catch (error) {
+      console.error("Invalid cursor for fuzzy search:", error);
+    }
+  }
+
+  const endIndex = startIndex + limit;
+  const paginatedResults = filteredResults.slice(startIndex, endIndex);
+
+  // Calculate pagination metadata
+  const hasNextPage = endIndex < filteredResults.length;
+  const hasPrevPage = startIndex > 0;
+
+  const nextCursor =
+    hasNextPage && paginatedResults.length > 0
+      ? generateCursor(paginatedResults[paginatedResults.length - 1], sortBy)
+      : null;
+
+  const prevCursor =
+    hasPrevPage && paginatedResults.length > 0
+      ? generateCursor(paginatedResults[0], sortBy)
+      : null;
+
+  return {
+    products: paginatedResults,
+    nextCursor,
+    prevCursor,
+    hasNextPage,
+    hasPrevPage,
+    totalProducts: filteredResults.length,
+  };
 }

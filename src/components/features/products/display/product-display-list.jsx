@@ -22,6 +22,7 @@ export default function ProductDisplayList({
   initialPage = 1,
   initialLimit = 10,
 }) {
+  console.log("initialData:", initialData);
   // State for table operations
   const [pagination, setPagination] = React.useState({
     pageIndex: initialPage - 1,
@@ -62,7 +63,7 @@ export default function ProductDisplayList({
 
   // Fetch data with current parameters
   const { data: productsData, isLoading, error } = useGetProducts(apiParams);
-
+  console.log("loading state of productsData:", isLoading);
   // Use server data if available, fallback to initial data
   const products = productsData?.products || (isLoading ? [] : initialData);
   const totalProducts = productsData?.totalProducts || initialData.length;

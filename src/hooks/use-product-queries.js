@@ -8,6 +8,7 @@ import {
   createProductApi,
   updateProductApi,
   checkProductNameApi,
+  getProductsCursorApi,
 } from "@/lib/api/products";
 
 /**
@@ -83,6 +84,54 @@ export function useGetProducts(options = {}) {
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnWindowFocus: false, // Don't refetch on window focus for better UX
     refetchOnMount: "always", // Always refetch on mount to ensure fresh data
+  });
+}
+
+/**
+ * Hook to fetch products using cursor-based pagination with TanStack Query.
+ * Better performance for large datasets compared to offset-based pagination.
+ * @param {{cursor?: string, direction?: 'forward'|'backward', limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, enableFuzzySearch?: boolean}} options - Cursor pagination, sorting, and filtering options.
+ * @returns {Object} TanStack Query result object.
+ */
+export function useGetProductsCursor(options = {}) {
+  const {
+    cursor = null,
+    direction = "forward",
+    limit = 10,
+    sortBy,
+    sortOrder,
+    nameFilter,
+    categoryFilter,
+    enableFuzzySearch = true,
+  } = options;
+
+  return useQuery({
+    queryKey: queryKeys.products.cursorList({
+      cursor,
+      direction,
+      limit,
+      sortBy,
+      sortOrder,
+      nameFilter,
+      categoryFilter,
+      enableFuzzySearch,
+    }),
+    queryFn: () =>
+      getProductsCursorApi({
+        cursor,
+        direction,
+        limit,
+        sortBy,
+        sortOrder,
+        nameFilter,
+        categoryFilter,
+        enableFuzzySearch,
+      }),
+    staleTime: 2 * 60 * 1000, // 2 minutes - products change frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus for better UX
+    refetchOnMount: "always", // Always refetch on mount to ensure fresh data
+    keepPreviousData: true, // Keep previous data while fetching new data for smoother UX
   });
 }
 
