@@ -6,6 +6,7 @@ import ProductDisplayList from "@/components/features/products/display/product-d
 /**
  * Server component for the products listing page.
  * Fetches initial product data and renders the client-side table.
+ * Supports URL-driven state management for pagination, sorting, and filtering.
  */
 export default async function ProductsPage({ searchParams }) {
   // Authenticate the user and get session
@@ -14,14 +15,33 @@ export default async function ProductsPage({ searchParams }) {
     redirect("/auth/login");
   }
 
-  const { page: searchParamsPage, limit: searchParamsLimit } =
-    (await searchParams) || {};
+  const resolvedSearchParams = await searchParams;
 
-  // Get pagination parameters from URL
-  const page = Number(searchParamsPage) || 1;
-  const limit = Number(searchParamsLimit) || 10;
+  // Parse URL parameters with validation and defaults
+  const page = Math.max(1, parseInt(resolvedSearchParams?.page || "1", 10));
+  const limit = Math.max(
+    1,
+    Math.min(100, parseInt(resolvedSearchParams?.limit || "10", 10))
+  );
+  const sortBy = resolvedSearchParams?.sortBy || "createdAt";
+  const sortOrder = ["asc", "desc"].includes(resolvedSearchParams?.sortOrder)
+    ? resolvedSearchParams.sortOrder
+    : "desc";
+  const nameFilter = resolvedSearchParams?.nameFilter || "";
+  const categoryFilter = resolvedSearchParams?.categoryFilter || "";
 
-  // Fetch initial product data server-side
+  // Validate sortBy field
+  const validSortFields = [
+    "createdAt",
+    "name",
+    "sellingPrice",
+    "purchasePrice",
+    "stock",
+    "category",
+  ];
+  const validSortBy = validSortFields.includes(sortBy) ? sortBy : "createdAt";
+
+  // Fetch initial product data server-side with URL parameters
   let initialData = [];
   let error = null;
 
@@ -31,6 +51,11 @@ export default async function ProductsPage({ searchParams }) {
       {
         page,
         limit,
+        sortBy: validSortBy,
+        sortOrder,
+        nameFilter,
+        categoryFilter,
+        enableFuzzySearch: true,
       }
     );
     initialData = result.products;

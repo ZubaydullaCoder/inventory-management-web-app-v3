@@ -1,17 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { useDebounce } from "use-debounce";
 import { DataTable } from "@/components/ui/data-table";
 import { productColumns } from "./product-table-columns";
 import { useGetProducts } from "@/hooks/use-product-queries";
+import { useTableUrlState } from "@/hooks/use-table-url-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Client component that displays a list of products in a data table.
- * Uses server-side sorting, filtering, and pagination.
+ * Uses URL-driven state management for pagination, sorting, and filtering.
+ * Automatically resets pagination when filters change and preserves state across page refreshes.
  *
  * @param {Object} props
  * @param {Array} [props.initialData] - Initial product data from server
@@ -23,67 +24,52 @@ export default function ProductDisplayList({
   initialPage = 1,
   initialLimit = 10,
 }) {
-  // State for table operations
-  const [pagination, setPagination] = React.useState({
-    pageIndex: initialPage - 1,
-    pageSize: initialLimit,
+  // URL-driven state management with automatic pagination reset on filter changes
+  const {
+    tableState,
+    apiParams,
+    handlePaginationChange,
+    handleSortingChange,
+    handleColumnFiltersChange,
+    validatePage,
+    isFiltered,
+  } = useTableUrlState({
+    page: initialPage,
+    limit: initialLimit,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    nameFilter: "",
+    categoryFilter: "",
   });
-  const [sorting, setSorting] = React.useState([]);
-  const [columnFilters, setColumnFilters] = React.useState([]);
+
+  // Additional table state for UI-only features
   const [columnVisibility, setColumnVisibility] = React.useState({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  // Convert TanStack Table state to API parameters with debounced filters
-  const nameFilter = columnFilters.find((f) => f.id === "name")?.value || "";
-  const categoryFilter =
-    columnFilters.find((f) => f.id === "category")?.value || "";
-
-  // Debounce filter values to reduce rapid API calls (300ms is optimal for search UX)
-  const [debouncedNameFilter] = useDebounce(nameFilter, 300);
-  const [debouncedCategoryFilter] = useDebounce(categoryFilter, 300);
-
-  const apiParams = React.useMemo(() => {
-    const params = {
-      page: pagination.pageIndex + 1,
-      limit: pagination.pageSize,
-    };
-
-    // Add sorting parameters
-    if (sorting.length > 0) {
-      const sort = sorting[0];
-      params.sortBy = sort.id;
-      params.sortOrder = sort.desc ? "desc" : "asc";
-    }
-
-    // Add debounced filtering parameters
-    if (debouncedNameFilter) {
-      params.nameFilter = debouncedNameFilter;
-    }
-
-    if (debouncedCategoryFilter) {
-      params.categoryFilter = debouncedCategoryFilter;
-    }
-
-    return params;
-  }, [pagination, sorting, debouncedNameFilter, debouncedCategoryFilter]);
-
-  // Fetch data with current parameters
+  // Fetch data with URL-driven parameters
   const { data: productsData, isLoading, error } = useGetProducts(apiParams);
 
   // Use server data if available, fallback to initial data
   const products = productsData?.products || (isLoading ? [] : initialData);
   const totalProducts = productsData?.totalProducts || initialData.length;
-  const pageCount = Math.ceil(totalProducts / pagination.pageSize);
+  const pageCount = Math.ceil(totalProducts / tableState.pagination.pageSize);
 
-  // Handle state changes
+  // Validate current page when data changes
+  React.useEffect(() => {
+    if (productsData && pageCount > 0) {
+      validatePage(pageCount);
+    }
+  }, [productsData, pageCount, validatePage]);
+
+  // Handle state changes for TanStack Table
   const handleStateChange = React.useMemo(
     () => ({
-      onPaginationChange: setPagination,
-      onSortingChange: setSorting,
-      onColumnFiltersChange: setColumnFilters,
-      onColumnVisibilityChange: setColumnVisibility, // <-- ADD THIS LINE
+      onPaginationChange: handlePaginationChange,
+      onSortingChange: handleSortingChange,
+      onColumnFiltersChange: handleColumnFiltersChange,
+      onColumnVisibilityChange: setColumnVisibility,
     }),
-    []
+    [handlePaginationChange, handleSortingChange, handleColumnFiltersChange]
   );
 
   if (error) {
@@ -104,7 +90,7 @@ export default function ProductDisplayList({
   // Create skeleton data for loading overlay while preserving table structure
   const displayData =
     isLoading && products.length === 0
-      ? Array.from({ length: pagination.pageSize }, (_, i) => ({
+      ? Array.from({ length: tableState.pagination.pageSize }, (_, i) => ({
           id: `skeleton-${i}`,
           name: `skeleton-${i}`,
           sellingPrice: 0,
@@ -122,11 +108,11 @@ export default function ProductDisplayList({
       columns={productColumns}
       data={displayData}
       state={{
-        sorting,
+        sorting: tableState.sorting,
         columnVisibility,
         rowSelection,
-        columnFilters,
-        pagination,
+        columnFilters: tableState.columnFilters,
+        pagination: tableState.pagination,
       }}
       onStateChange={handleStateChange}
       manualPagination={true}
@@ -134,7 +120,7 @@ export default function ProductDisplayList({
       manualFiltering={true}
       pageCount={pageCount}
       showToolbar={true}
-      isLoading={isLoading} // Pass loading state to DataTable for selective skeletons
+      isLoading={isLoading}
     />
   );
 }
