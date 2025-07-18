@@ -87,7 +87,7 @@ export default function ProductDisplayList({
     return <ProductTableSkeleton />;
   }
 
-  // Create skeleton data for loading overlay while preserving table structure
+  // Create skeleton data for selective loading while preserving table structure
   const displayData =
     isLoading && products.length === 0
       ? Array.from({ length: tableState.pagination.pageSize }, (_, i) => ({
@@ -99,7 +99,7 @@ export default function ProductDisplayList({
           unit: "",
           category: { name: "skeleton" },
           supplier: { name: "skeleton" },
-          isLoading: true,
+          isLoading: true, // Flag to identify skeleton rows
         }))
       : products;
 
@@ -120,7 +120,7 @@ export default function ProductDisplayList({
       manualFiltering={true}
       pageCount={pageCount}
       showToolbar={true}
-      isLoading={isLoading}
+      isLoading={isLoading} // Pass loading state for selective skeleton rendering
     />
   );
 }

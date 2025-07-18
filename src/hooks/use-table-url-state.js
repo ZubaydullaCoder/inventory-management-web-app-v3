@@ -6,8 +6,8 @@ import { useDebounce } from "use-debounce";
 
 /**
  * Custom hook for URL-driven table state management.
- * Synchronizes table state (pagination, sorting, filters) with URL parameters.
- * Uses separate local state for filter inputs to prevent URL update lag.
+ * Synchronizes pagination and sorting with URL parameters.
+ * Uses local state for filters to prevent input lag.
  *
  * @param {Object} defaultState - Default table state values
  * @param {number} [defaultState.page] - Default page number
@@ -16,7 +16,6 @@ import { useDebounce } from "use-debounce";
  * @param {string} [defaultState.sortOrder] - Default sort order
  * @param {string} [defaultState.nameFilter] - Default name filter
  * @param {string} [defaultState.categoryFilter] - Default category filter
- * @param {number} [debounceDelay] - Debounce delay for URL updates in ms
  * @returns {Object} Table state and update functions
  */
 export function useTableUrlState(
@@ -27,14 +26,13 @@ export function useTableUrlState(
     sortOrder: "desc",
     nameFilter: "",
     categoryFilter: "",
-  },
-  debounceDelay = 500
+  }
 ) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Parse current URL parameters with validation
+  // Parse current URL parameters with validation (no filters in URL)
   const urlState = useMemo(() => {
     const page = Math.max(
       1,
@@ -49,10 +47,6 @@ export function useTableUrlState(
     );
     const sortBy = searchParams.get("sortBy") || defaultState.sortBy;
     const sortOrder = searchParams.get("sortOrder") || defaultState.sortOrder;
-    const nameFilter =
-      searchParams.get("nameFilter") || defaultState.nameFilter;
-    const categoryFilter =
-      searchParams.get("categoryFilter") || defaultState.categoryFilter;
 
     // Validate sort order
     const validSortOrder = ["asc", "desc"].includes(sortOrder)
@@ -77,50 +71,21 @@ export function useTableUrlState(
       limit,
       sortBy: validSortBy,
       sortOrder: validSortOrder,
-      nameFilter,
-      categoryFilter,
     };
   }, [searchParams, defaultState]);
 
-  // Local state for immediate filter input updates (prevents URL lag)
+  // Local state for filter inputs (prevents URL lag)
   const [localFilters, setLocalFilters] = useState({
-    nameFilter: urlState.nameFilter,
-    categoryFilter: urlState.categoryFilter,
+    nameFilter: defaultState.nameFilter,
+    categoryFilter: defaultState.categoryFilter,
   });
 
-  // Sync local filters with URL state when URL changes (browser navigation, etc.)
-  useEffect(() => {
-    setLocalFilters({
-      nameFilter: urlState.nameFilter,
-      categoryFilter: urlState.categoryFilter,
-    });
-  }, [urlState.nameFilter, urlState.categoryFilter]);
-
-  // Create debounced values for API calls and URL updates
-  const [debouncedNameFilter] = useDebounce(
-    localFilters.nameFilter,
-    debounceDelay
-  );
+  // Debounce filter values for API calls only (not URL updates)
+  const [debouncedNameFilter] = useDebounce(localFilters.nameFilter, 300);
   const [debouncedCategoryFilter] = useDebounce(
     localFilters.categoryFilter,
-    debounceDelay
+    300
   );
-
-  // Update URL when debounced filter values change
-  useEffect(() => {
-    if (
-      debouncedNameFilter !== urlState.nameFilter ||
-      debouncedCategoryFilter !== urlState.categoryFilter
-    ) {
-      const newState = {
-        ...urlState,
-        nameFilter: debouncedNameFilter,
-        categoryFilter: debouncedCategoryFilter,
-        page: 1, // Reset pagination when filters change
-      };
-      updateUrl(newState);
-    }
-  }, [debouncedNameFilter, debouncedCategoryFilter, urlState]);
 
   // Current state combines URL state with local filter state
   const currentState = useMemo(
@@ -187,7 +152,7 @@ export function useTableUrlState(
     return params;
   }, [urlState, debouncedNameFilter, debouncedCategoryFilter]);
 
-  // Build URL with new parameters
+  // Build URL with new parameters (no filters in URL)
   const buildUrl = useCallback(
     (newState) => {
       const params = new URLSearchParams();
@@ -204,12 +169,6 @@ export function useTableUrlState(
       }
       if (newState.sortOrder !== defaultState.sortOrder) {
         params.set("sortOrder", newState.sortOrder);
-      }
-      if (newState.nameFilter) {
-        params.set("nameFilter", newState.nameFilter);
-      }
-      if (newState.categoryFilter) {
-        params.set("categoryFilter", newState.categoryFilter);
       }
 
       const queryString = params.toString();
@@ -239,14 +198,14 @@ export function useTableUrlState(
   // Smart pagination reset when filters change
   const updateFilters = useCallback(
     (filters) => {
-      const newState = {
-        ...urlState,
+      setLocalFilters((prev) => ({
+        ...prev,
         ...filters,
-        page: 1, // Always reset to page 1 when filters change
-      };
-      updateUrl(newState);
+      }));
+      // Reset pagination when filters change
+      updateState({ page: 1 });
     },
-    [urlState, updateUrl]
+    [updateState]
   );
 
   // TanStack Table state change handlers
@@ -299,13 +258,21 @@ export function useTableUrlState(
       const categoryFilter =
         newFilters.find((f) => f.id === "category")?.value || "";
 
-      // Update local filter state immediately (no URL update lag)
+      // Update local filter state immediately (no URL update)
       setLocalFilters({
         nameFilter,
         categoryFilter,
       });
+
+      // Reset pagination when filters change
+      if (
+        nameFilter !== localFilters.nameFilter ||
+        categoryFilter !== localFilters.categoryFilter
+      ) {
+        updateState({ page: 1 });
+      }
     },
-    [tableState.columnFilters]
+    [tableState.columnFilters, localFilters, updateState]
   );
 
   // Reset all filters
@@ -314,11 +281,7 @@ export function useTableUrlState(
       nameFilter: "",
       categoryFilter: "",
     });
-    updateState({
-      page: 1,
-      nameFilter: "",
-      categoryFilter: "",
-    });
+    updateState({ page: 1 });
   }, [updateState]);
 
   // Validate current page against total pages
