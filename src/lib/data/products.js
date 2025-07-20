@@ -320,8 +320,12 @@ export async function getProductsByShopIdCursor(
   try {
     const trimmedNameFilter = nameFilter ? nameFilter.trim() : "";
 
-    // Handle fuzzy search first if enabled
-    if (enableFuzzySearch && trimmedNameFilter) {
+    // Use PostgreSQL native fuzzy search for name filtering when enabled and query is meaningful
+    if (
+      enableFuzzySearch &&
+      trimmedNameFilter &&
+      trimmedNameFilter.length >= 2
+    ) {
       return await getCursorPaginatedFuzzySearchResults(
         shopId,
         trimmedNameFilter,
@@ -592,7 +596,7 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
 
   // For fuzzy search, we need to get all results first, then apply cursor pagination
   // This is a limitation of complex fuzzy search queries
-  const fuzzyResults = await fuzzySearchProducts(shopId, query, limit * 5); // Get more results
+  const fuzzyResults = await fuzzySearchProducts(query, shopId, limit * 5); // Get more results
 
   // Apply category filter if specified
   let filteredResults = fuzzyResults;
