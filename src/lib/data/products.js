@@ -245,6 +245,8 @@ export async function getProductsByShopId(
       purchasePrice: true,
       stock: true,
       unit: true,
+      reorderPoint: true,
+      categoryId: true,
       createdAt: true,
       category: {
         select: {
@@ -377,6 +379,8 @@ export async function getProductsByShopIdCursor(
       purchasePrice: true,
       stock: true,
       unit: true,
+      reorderPoint: true,
+      categoryId: true,
       createdAt: true,
       category: {
         select: {

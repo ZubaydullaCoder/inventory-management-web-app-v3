@@ -1,52 +1,42 @@
-Step 1 — Intent Clarification & Request Evaluation
+Step 1 — Intent Clarification
+You want to fix the “Edit Product” modal so that when you open it from the main product table:
 
-Your report is clear and actionable: after integrating cursor pagination, the product‐name and category filters no longer work—typing any filter still shows “no results,” even when matching items exist.
+The Category dropdown shows the product’s current category instead of “Category (optional)”.
+The Reorder Point input displays the actual number on the product (not always 0).
+This is clear, actionable, and scoped to the edit‐modal workflow in the product table.
 
-Step 2 — What Do We Implement?
+Step 2 — What We’ll Implement
+Before:
 
-• Current Behavior
-– Cursor API is called with nameFilter & categoryFilter from local state
-– Server returns zero items, “no results” message displayed
+The table fetcher omits both categoryId and reorderPoint from the JSON it returns.
+The edit hook’s reset({...}) call uses product.categoryId and product.reorderPoint, but those fields are always undefined.
+As a result the form falls back to placeholder values (“Category (optional)”, “0”), even when the product has real data.
+After:
 
-• Target Behavior
-– When typing into the product‐name or category filter inputs:
-• The table updates to show only matching products
-• Cursor is reset (to start of filtered set)
-• Next/Previous navigation works over the filtered subset
+We’ll add categoryId: true and reorderPoint: true to the Prisma select in both getProductsByShopId and getProductsByShopIdCursor.
+Now the GET endpoints return those fields, the edit hook’s reset will see real values, and both the dropdown and numeric input will pre-populate correctly.
+Edge cases:
 
-Edge Cases / Scenarios
-• Empty filter → full list, working cursor nav
-• New filter input resets cursor
-• Clearing filter resets cursor and shows unfiltered list
-• Filtering plus paging: e.g. filter for “chair,” navigate pages of chairs
+Products without a category still show “optional”
+Products with no reorder point show an empty input instead of zero
+Step 3 — How We’ll Implement
 
-Step 3 — How Do We Implement?
-
-Root Cause Hypothesis
-The cursor‐pagination data‐layer (Prisma/route) is not applying the nameFilter/categoryFilter arguments, so the API always returns zero items for any filter. Under offset pagination the same server code handled filters correctly; the cursor route needs to incorporate those where‐clauses.
-
-Investigation Steps
-
-Confirm in products.js that getProductsByShopIdCursor() uses the filter parameters in its Prisma query.
-If missing, add where clauses for name and category.name filters, matching the existing offset‐query logic.
-Ensure the route handler in route.js passes nameFilter & categoryFilter into the data‐layer function.
-Reuse & Consistency
-– Copy filter‐building logic from the offset‐pagination path (in getProductsByShopId or similar).
-– No new packages needed—reusing Prisma and existing query patterns.
+Locate products.js.
+In getProductsByShopId(...)
+Find the selectFields object passed to prisma.product.findMany.
+Add
+In getProductsByShopIdCursor(...)
+Likewise add the same two lines to its selectFields.
+No changes needed in front-end hooks or components—they’ll automatically pick up the new fields.
+This reuses your existing Prisma setup, keeps things DRY, and fixes the root cause.
 
 Step 4 — Final Plan Summary
 
-• Files to Update
-– route.js
-– products.js
-
-• Key API Properties
-– Ensure nameFilter and categoryFilter are forwarded from route → data layer
-– In Prisma query, add:
-• where: { name: { contains: nameFilter, mode: 'insensitive' }, category: { name: { contains: categoryFilter, mode: 'insensitive' } } }
-
-• CLI Commands
-– none
-
-• Reused Logic
-– The where‐filters from getProductsByShopId() (offset) in products.js
+📁 Files to update
+products.js
+getProductsByShopId: add reorderPoint and categoryId to selectFields
+getProductsByShopIdCursor: add the same two fields
+📦 No new dependencies
+💻 CLI: none
+🔄 Reuses existing Prisma client and edit-form logic
+⏳ Let me know if you’d like me to apply these changes.
