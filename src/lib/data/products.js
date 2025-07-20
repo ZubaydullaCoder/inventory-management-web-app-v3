@@ -411,12 +411,19 @@ export async function getProductsByShopIdCursor(
       direction === "backward" ? products.reverse() : products;
 
     // Check if there are more pages
+    // For cursor pagination, we need to properly determine if there are more pages
+    // We fetched limit + 1 items, so if we got more than limit, there are more pages
+    const hasMoreItemsInCurrentDirection = orderedProducts.length > limit;
+
     const hasNextPage =
-      direction === "forward" ? orderedProducts.length > limit : false;
+      direction === "forward"
+        ? hasMoreItemsInCurrentDirection
+        : Boolean(cursor); // If we came from somewhere, we can go forward
+
     const hasPrevPage =
       direction === "backward"
-        ? orderedProducts.length > limit
-        : Boolean(cursor);
+        ? hasMoreItemsInCurrentDirection
+        : Boolean(cursor); // If we came from somewhere, we can go backward
 
     // Remove the extra item if present
     const finalProducts = orderedProducts.slice(0, limit);

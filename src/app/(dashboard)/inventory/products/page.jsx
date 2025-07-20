@@ -87,6 +87,7 @@ export default async function ProductsPage({ searchParams }) {
           initialData={initialData}
           initialPage={page}
           initialLimit={limit}
+          useCursorPagination={true} // Enable cursor pagination for better performance
         />
       )}
     </div>

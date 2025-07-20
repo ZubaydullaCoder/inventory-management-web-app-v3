@@ -23,37 +23,50 @@ These are the primitive values of our design. They must be configured in tailwin
 
 2.1. Color Palette
 
-We will customize the default shadcn/ui color theme to match our new brand identity. The AI agent, during initial setup, must modify the globals.css file with these HSL values.
+The application uses a custom color palette to match our brand identity. The primary color and background colors are defined in Tailwind and globals.css using HSL values.
 
-Primary Color: rgb(255, 189, 47)
+**Primary Color:**
 
-Background Color (Light): rgb(255, 255, 255)
+- HSL: 198.6, 88.7%, 48.4%
+- Example: `hsl(198.6, 88.7%, 48.4%)` (a vibrant blue/cyan)
 
-Background Color (Dark): rgb(26, 39, 51)
+**Background Color (Light):**
 
-AI Action: During project setup, use a color converter to get the HSL values for the specified RGB colors. Then, use these values to replace the default light and dark theme variables in globals.css.
+- HSL: 0, 0%, 100%
+- Example: `hsl(0, 0%, 100%)` (white)
+
+**Background Color (Dark):**
+
+- HSL: 26, 39%, 10%
+- Example: `hsl(26, 39%, 10%)` (dark blue/gray)
+
+**AI Action:**  
+During project setup, ensure these HSL values are used for the primary and background colors in both Tailwind config and globals.css.
 
 2.2. Typography
 
-To achieve a modern and clean look, we will use the "Nunito" font family.
+The application uses the "Inter" font family for a modern, clean look.
 
-Font: Nunito
+**Font:** Inter
 
-AI Action: In the root layout.jsx, the AI must use next/font/google to import and apply the Nunito font to the entire application.
+**AI Action:**  
+In the root `layout.jsx`, use `next/font/google` to import and apply the Inter font to the entire application.
 
-Generated javascript
+Example:
+
+```js
 // src/app/layout.jsx
-import { Nunito } from 'next/font/google';
-const nunito = Nunito({ subsets: ['latin'] });
+import { Inter } from "next/font/google";
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export default function RootLayout({ children }) {
-return (
-
-<html lang="en" className={nunito.className}>
-{/_ ... _/}
-</html>
-);
+  return (
+    <html lang="en" className={inter.variable}>
+      {/* ... */}
+    </html>
+  );
 }
+```
 
 2.3. Spacing & Sizing
 
