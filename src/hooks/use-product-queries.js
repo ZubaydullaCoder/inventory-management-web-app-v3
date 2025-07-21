@@ -146,6 +146,20 @@ export function useCreateProduct() {
     mutationFn: createProductApi,
     // --- Optimistic update for product list ---
     onMutate: async (newProduct) => {
+      const optimisticId = newProduct.optimisticId || `optimistic-${Date.now()}`;
+      
+      // Add new product to session creations cache with pending status
+      queryClient.setQueryData(queryKeys.products.sessionCreations(), (old = []) => [
+        {
+          optimisticId,
+          data: {
+            ...newProduct,
+            id: optimisticId,
+          },
+          status: "pending",
+        },
+        ...old,
+      ]);
       const normalizedName = normalizeProductName(newProduct.name);
       // Cancel outgoing fetches for product lists
       await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
@@ -177,17 +191,46 @@ export function useCreateProduct() {
           }
         });
 
-      return { previousLists, normalizedName };
+      return { previousLists, normalizedName, optimisticId };
     },
-    onError: (_err, _newProduct, context) => {
-      // Rollback cache to previous state
+    onError: (_err, newProduct, context) => {
+      // Mark the session creation as error
+      if (context?.optimisticId) {
+        queryClient.setQueryData(queryKeys.products.sessionCreations(), (old = []) =>
+          old.map((item) =>
+            item.optimisticId === context.optimisticId
+              ? { ...item, status: "error" }
+              : item
+          )
+        );
+        
+        // Auto-remove failed items after a delay
+        setTimeout(() => {
+          queryClient.setQueryData(queryKeys.products.sessionCreations(), (old = []) =>
+            old.filter((item) => item.optimisticId !== context.optimisticId)
+          );
+        }, 5000);
+      }
+      
+      // Rollback product lists cache to previous state
       if (context?.previousLists) {
         context.previousLists.forEach(([key, data]) => {
           queryClient.setQueryData(key, data);
         });
       }
     },
-    onSuccess: (_data, variables, context) => {
+    onSuccess: (data, variables, context) => {
+      // Update the session creation with success status and real data
+      if (context?.optimisticId) {
+        queryClient.setQueryData(queryKeys.products.sessionCreations(), (old = []) =>
+          old.map((item) =>
+            item.optimisticId === context.optimisticId
+              ? { ...item, data, status: "success" }
+              : item
+          )
+        );
+      }
+      
       // Invalidate product lists to refetch from server
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
       // Invalidate name check for this name
@@ -278,6 +321,25 @@ export function useUpdateProduct() {
             });
           }
         });
+        
+      // Also update session creations if the product exists there
+      const sessionCreations = queryClient.getQueryData(queryKeys.products.sessionCreations()) || [];
+      queryClient.setQueryData(
+        queryKeys.products.sessionCreations(),
+        sessionCreations.map((item) =>
+          item.data?.id === productId
+            ? {
+                ...item,
+                data: {
+                  ...item.data,
+                  ...productData,
+                  name: normalizedName,
+                  category: resolvedCategory,
+                },
+              }
+            : item
+        )
+      );
 
       return { previousLists, normalizedName, oldNormalizedName };
     },

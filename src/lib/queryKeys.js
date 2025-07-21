@@ -14,6 +14,7 @@ export const queryKeys = {
     details: () => [...queryKeys.products.all(), "detail"],
     detail: (id) => [...queryKeys.products.details(), id],
     checkName: (name) => [...queryKeys.products.all(), "checkName", name],
+    sessionCreations: () => [...queryKeys.products.all(), "session-creations"],
   },
   categories: {
     all: () => ["categories"],

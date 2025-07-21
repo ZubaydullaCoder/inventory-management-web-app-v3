@@ -13,16 +13,16 @@ import { AlertCircle } from "lucide-react";
 
 /**
  * ProductDisplayList - Strategic component for product data presentation.
- * 
+ *
  * Primary Responsibilities:
  * 1. Selects and configures the appropriate pagination strategy (cursor vs offset)
  * 2. Manages error boundaries and error display
  * 3. Orchestrates data fetching based on the selected strategy
  * 4. Delegates all rendering concerns to ProductTableContainer
- * 
+ *
  * This component acts as the strategic layer, making decisions about HOW to fetch
  * and paginate data, while ProductTableContainer handles the presentation layer.
- * 
+ *
  * @param {Object} props
  * @param {Array} [props.initialData=[]] - Initial product data from server-side rendering
  * @param {number} [props.initialPage=1] - Initial page number for offset pagination
@@ -147,7 +147,9 @@ export default function ProductDisplayList({
       handlePageSizeChange={handlePageSizeChange}
       totalProducts={totalProducts}
       isLoading={isLoading}
-      skeletonRowCount={apiParams.limit || tableState.pagination?.pageSize || 10}
+      skeletonRowCount={
+        apiParams.limit || tableState.pagination?.pageSize || 10
+      }
     />
   );
 }

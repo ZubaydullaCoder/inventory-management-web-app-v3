@@ -19,11 +19,7 @@ import { useProductCreationForm } from "@/hooks/use-product-creation-form";
 /**
  * Renders product form UI only. All logic lives in `useProductForm`.
  */
-export default function ProductCreationForm({
-  onOptimisticAdd,
-  onSuccess,
-  onError,
-}) {
+export default function ProductCreationForm() {
   const {
     form,
     control,
@@ -35,7 +31,7 @@ export default function ProductCreationForm({
     nameCheckError,
     showAvailable,
     isSubmitDisabled,
-  } = useProductCreationForm({ onOptimisticAdd, onSuccess, onError });
+  } = useProductCreationForm();
 
   return (
     <Form {...form}>

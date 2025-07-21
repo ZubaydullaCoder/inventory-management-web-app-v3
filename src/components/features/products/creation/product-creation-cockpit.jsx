@@ -1,7 +1,8 @@
 // src/components/features/products/product-creation-cockpit.jsx
 "use client";
 
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import ProductCreationForm from "@/components/features/products/creation/product-creation-form";
 import ProductSessionCreationList from "@/components/features/products/creation/product-session-creation-list";
 
@@ -14,61 +15,16 @@ import ProductSessionCreationList from "@/components/features/products/creation/
  */
 export default function ProductCreationCockpit() {
   // State is now held locally in this client component.
-  const [sessionProducts, setSessionProducts] = useState([]);
-
-  /**
-   * Callback for optimistic updates. Adds a new product to the local state.
-   * @param {{optimisticId: string, data: object, status: string}} optimisticProduct
-   */
-  const handleOptimisticAdd = (optimisticProduct) => {
-    setSessionProducts((prev) => [optimisticProduct, ...prev]);
-  };
-
-  /**
-   * Callback for successful server response. Updates the product with confirmed data.
-   * @param {{data: object, optimisticId: string}} confirmedProduct
-   */
-  const handleSuccess = (confirmedProduct) => {
-    setSessionProducts((prev) =>
-      prev.map((p) =>
-        p.optimisticId === confirmedProduct.optimisticId
-          ? { ...p, data: confirmedProduct.data, status: "success" }
-          : p
-      )
-    );
-  };
-
-  /**
-   * Callback for failed server response. Marks the product as 'error'.
-   * @param {string} optimisticId
-   */
-  const handleError = (optimisticId) => {
-    setSessionProducts((prev) =>
-      prev.map((p) =>
-        p.optimisticId === optimisticId ? { ...p, status: "error" } : p
-      )
-    );
-    // Auto-remove failed items after a delay for better UX.
-    setTimeout(() => {
-      setSessionProducts((prev) =>
-        prev.filter((p) => p.optimisticId !== optimisticId)
-      );
-    }, 5000);
-  };
-
-  /**
-   * Callback for successful product edit. Updates the product in local state.
-   * @param {object} updatedProduct
-   */
-  const handleEditSuccess = (updatedProduct) => {
-    setSessionProducts((prev) =>
-      prev.map((p) =>
-        p.data.id === updatedProduct.id
-          ? { ...p, data: { ...p.data, ...updatedProduct }, status: "success" }
-          : p
-      )
-    );
-  };
+  // Use TanStack Query to manage session products in cache
+  // This is a local-only cache that doesn't fetch from server
+  const { data: sessionProducts = [] } = useQuery({
+    queryKey: queryKeys.products.sessionCreations(),
+    queryFn: () => [], // Return empty array as this is local-only
+    staleTime: Infinity, // Never refetch as this is session-based
+    gcTime: 0, // Clear on unmount to ensure fresh session on page refresh
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[600px]">
@@ -78,11 +34,7 @@ export default function ProductCreationCockpit() {
           <h2 className="text-xl font-semibold text-foreground mb-4">
             Product Details
           </h2>
-          <ProductCreationForm
-            onOptimisticAdd={handleOptimisticAdd}
-            onSuccess={handleSuccess}
-            onError={handleError}
-          />
+          <ProductCreationForm />
         </div>
       </div>
 
@@ -92,10 +44,7 @@ export default function ProductCreationCockpit() {
           <h2 className="text-xl font-semibold text-foreground mb-4">
             Recently Added
           </h2>
-          <ProductSessionCreationList
-            products={sessionProducts}
-            onEditSuccess={handleEditSuccess}
-          />
+          <ProductSessionCreationList products={sessionProducts} />
         </div>
       </div>
     </div>

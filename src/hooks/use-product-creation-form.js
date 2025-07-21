@@ -13,18 +13,10 @@ import { toast } from "sonner";
 /**
  * Encapsulates all form state and submission logic for ProductForm.
  * @param {{
- *   onOptimisticAdd: Function,
- *   onSuccess: Function,
- *   onError: Function,
  *   excludeId?: string
  * }} props
  */
-export function useProductCreationForm({
-  onOptimisticAdd,
-  onSuccess,
-  onError,
-  excludeId,
-}) {
+export function useProductCreationForm({ excludeId } = {}) {
   // Default form values for reset
   const initialValues = {
     name: "",
@@ -117,24 +109,18 @@ export function useProductCreationForm({
           : undefined,
         categoryId: values.categoryId || undefined,
         supplierId: values.supplierId || undefined,
+        optimisticId, // Include optimisticId in the data
       };
 
-      onOptimisticAdd({
-        optimisticId,
-        data: { ...processed, id: optimisticId },
-        status: "pending",
-      });
       // Reset form fields and preserve last selected unit and categoryId
-      reset({ ...initialValues, unit: lastUnit, categoryId: lastCategory }); // include category preservation
+      reset({ ...initialValues, unit: lastUnit, categoryId: lastCategory });
       setTimeout(() => nameInputRef.current?.focus(), 100);
 
       mutate(processed, {
         onSuccess: (product) => {
-          onSuccess({ data: product, optimisticId });
           toast.success("Product saved successfully!");
         },
         onError: (err) => {
-          onError(optimisticId);
           const msg = err.message.includes("already exists")
             ? "Product name already exists. Please choose a different name."
             : `Failed to save product: ${err.message}`;
@@ -146,9 +132,6 @@ export function useProductCreationForm({
       debouncedName,
       isNameDuplicate,
       mutate,
-      onOptimisticAdd,
-      onSuccess,
-      onError,
       reset,
       lastUnit,
       lastCategory,

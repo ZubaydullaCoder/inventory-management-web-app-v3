@@ -9,13 +9,10 @@ import ProductEditModal from "../edit/product-edit-modal";
  * Displays a list of products passed via props, with status indicators.
  * This is a pure presentational component.
  *
- * @param {{ products: Array<{data: object, status: string, optimisticId: string}>, onEditSuccess?: Function }} props
+ * @param {{ products: Array<{data: object, status: string, optimisticId: string}> }} props
  * @returns {JSX.Element}
  */
-export default function ProductSessionCreationList({
-  products = [],
-  onEditSuccess,
-}) {
+export default function ProductSessionCreationList({ products = [] }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -45,10 +42,8 @@ export default function ProductSessionCreationList({
    * @param {object} updatedProduct
    */
   const handleEditSuccess = (updatedProduct) => {
-    // Call parent handler if provided (for session state update)
-    if (onEditSuccess) {
-      onEditSuccess(updatedProduct);
-    }
+    // Updates are now handled directly in the mutation hooks
+    // via TanStack Query cache updates
   };
 
   if (products.length === 0) {
