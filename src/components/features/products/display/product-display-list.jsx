@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { DataTable } from "@/components/ui/data-table";
-import { productColumns } from "./product-table-columns";
+import ProductTableContainer from "./product-table-container";
 import {
   useGetProducts,
   useGetProductsCursor,
@@ -13,32 +12,35 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 /**
- * Client component that displays a list of products in a data table.
- * Uses URL-driven state management for pagination, sorting, and filtering.
- * Automatically resets pagination when filters change and preserves state across page refreshes.
- *
- * Loading Strategy: Uses selective skeleton loading where only dynamic data cells show skeleton
- * while static elements (headers, toolbar, pagination) remain functional throughout loading states.
- * This provides a superior UX compared to full-table skeleton overlays.
- *
+ * ProductDisplayList - Strategic component for product data presentation.
+ * 
+ * Primary Responsibilities:
+ * 1. Selects and configures the appropriate pagination strategy (cursor vs offset)
+ * 2. Manages error boundaries and error display
+ * 3. Orchestrates data fetching based on the selected strategy
+ * 4. Delegates all rendering concerns to ProductTableContainer
+ * 
+ * This component acts as the strategic layer, making decisions about HOW to fetch
+ * and paginate data, while ProductTableContainer handles the presentation layer.
+ * 
  * @param {Object} props
- * @param {Array} [props.initialData] - Initial product data from server
- * @param {number} [props.initialPage] - Initial page number
- * @param {number} [props.initialLimit] - Initial page size
- * @param {boolean} [props.useCursorPagination] - Whether to use cursor-based pagination (default: true for better performance)
+ * @param {Array} [props.initialData=[]] - Initial product data from server-side rendering
+ * @param {number} [props.initialPage=1] - Initial page number for offset pagination
+ * @param {number} [props.initialLimit=10] - Number of items per page
+ * @param {boolean} [props.useCursorPagination=true] - Strategy selector: true for cursor pagination (recommended), false for offset
  */
 export default function ProductDisplayList({
   initialData = [],
   initialPage = 1,
   initialLimit = 10,
-  useCursorPagination = true, // Enable cursor pagination by default for better performance
+  useCursorPagination = true,
 }) {
-  // Choose pagination strategy based on prop
+  // STRATEGY SELECTION: Choose the appropriate pagination hook based on strategy
   const paginationHook = useCursorPagination
     ? useTableCursorUrlState
     : useTableUrlState;
 
-  // URL-driven state management with automatic pagination reset on filter changes
+  // CONFIGURATION: Set up initial configuration based on selected strategy
   const paginationConfig = useCursorPagination
     ? {
         cursor: null,
@@ -58,6 +60,7 @@ export default function ProductDisplayList({
         categoryFilter: "",
       };
 
+  // STATE MANAGEMENT: Initialize URL-driven state and handlers
   const {
     tableState,
     apiParams,
@@ -70,22 +73,18 @@ export default function ProductDisplayList({
     isFiltered,
   } = paginationHook(paginationConfig);
 
-  // Additional table state for UI-only features
-  const [columnVisibility, setColumnVisibility] = React.useState({});
-  const [rowSelection, setRowSelection] = React.useState({});
-
-  // Fetch data with URL-driven parameters using appropriate hook
+  // DATA FETCHING: Select appropriate data hook based on pagination strategy
   const dataHook = useCursorPagination ? useGetProductsCursor : useGetProducts;
   const { data: productsData, isLoading, error } = dataHook(apiParams);
 
-  // Use server data if available, fallback to initial data
+  // DATA PREPARATION: Prepare data with fallbacks for rendering
   const products = productsData?.products || (isLoading ? [] : initialData);
   const totalProducts = productsData?.totalProducts || initialData.length;
 
-  // Handle different pagination metadata
+  // METADATA ASSEMBLY: Build pagination metadata based on strategy
   const paginationMetadata = useCursorPagination
     ? {
-        // Cursor pagination metadata
+        // Cursor-based metadata for efficient pagination
         prevCursor: productsData?.prevCursor || null,
         nextCursor: productsData?.nextCursor || null,
         hasPrevPage: productsData?.hasPrevPage || false,
@@ -93,11 +92,11 @@ export default function ProductDisplayList({
         currentPageSize: apiParams.limit,
       }
     : {
-        // Offset pagination metadata
+        // Offset-based metadata for traditional pagination
         pageCount: Math.ceil(totalProducts / tableState.pagination.pageSize),
       };
 
-  // Validate current page when data changes (offset pagination only)
+  // PAGE VALIDATION: Ensure current page is valid (offset pagination only)
   React.useEffect(() => {
     if (
       !useCursorPagination &&
@@ -113,24 +112,7 @@ export default function ProductDisplayList({
     validatePage,
   ]);
 
-  // Handle state changes for TanStack Table
-  const handleStateChange = React.useMemo(
-    () => ({
-      onPaginationChange: useCursorPagination
-        ? undefined
-        : handlePaginationChange,
-      onSortingChange: handleSortingChange,
-      onColumnFiltersChange: handleColumnFiltersChange,
-      onColumnVisibilityChange: setColumnVisibility,
-    }),
-    [
-      useCursorPagination,
-      handlePaginationChange,
-      handleSortingChange,
-      handleColumnFiltersChange,
-    ]
-  );
-
+  // ERROR BOUNDARY: Handle and display errors appropriately
   if (error) {
     return (
       <Alert variant="destructive">
@@ -142,53 +124,30 @@ export default function ProductDisplayList({
     );
   }
 
-  // Create skeleton data for selective loading while preserving table structure
-  const displayData =
-    isLoading && products.length === 0
-      ? Array.from(
-          { length: apiParams.limit || tableState.cursor?.pageSize || 10 },
-          (_, i) => ({
-            id: `skeleton-${i}`,
-            name: `skeleton-${i}`,
-            sellingPrice: 0,
-            purchasePrice: 0,
-            stock: 0,
-            unit: "",
-            category: { name: "skeleton" },
-            supplier: { name: "skeleton" },
-            isLoading: true, // Flag to identify skeleton rows
-          })
-        )
-      : products;
-
+  // DELEGATION: Pass all prepared data and handlers to ProductTableContainer
+  // This component has fulfilled its strategic responsibilities:
+  // - Selected pagination strategy
+  // - Fetched data using appropriate hooks
+  // - Handled errors
+  // Now delegate all presentation concerns to ProductTableContainer
   return (
-    <DataTable
-      columns={productColumns}
-      data={displayData}
-      state={{
-        sorting: tableState.sorting,
-        columnVisibility,
-        rowSelection,
-        columnFilters: tableState.columnFilters,
-        pagination: useCursorPagination ? undefined : tableState.pagination,
+    <ProductTableContainer
+      products={products}
+      tableState={tableState}
+      handleStateChange={{
+        onPaginationChange: useCursorPagination
+          ? undefined
+          : handlePaginationChange,
+        onSortingChange: handleSortingChange,
+        onColumnFiltersChange: handleColumnFiltersChange,
       }}
-      onStateChange={handleStateChange}
-      manualPagination={true}
-      manualSorting={true}
-      manualFiltering={true}
-      // Props for offset pagination
-      pageCount={useCursorPagination ? undefined : paginationMetadata.pageCount}
-      // Props for cursor pagination
+      paginationMetadata={paginationMetadata}
       useCursorPagination={useCursorPagination}
-      cursorPaginationState={
-        useCursorPagination ? paginationMetadata : undefined
-      }
-      onCursorChange={useCursorPagination ? handleCursorChange : undefined}
-      onPageSizeChange={useCursorPagination ? handlePageSizeChange : undefined}
-      totalItems={totalProducts}
-      // Common props
-      showToolbar={true}
-      isLoading={isLoading} // Pass loading state for selective skeleton rendering
+      handleCursorChange={handleCursorChange}
+      handlePageSizeChange={handlePageSizeChange}
+      totalProducts={totalProducts}
+      isLoading={isLoading}
+      skeletonRowCount={apiParams.limit || tableState.pagination?.pageSize || 10}
     />
   );
 }
