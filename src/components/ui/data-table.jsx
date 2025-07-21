@@ -71,17 +71,31 @@ export function DataTable({
     pageSize: 10,
   });
 
-  const table = useReactTable({
-    data,
-    columns,
-    pageCount: manualPagination ? pageCount : undefined,
-    state: state || {
+  // Merge external state with internal state, prioritizing external state when provided
+  const mergedState = React.useMemo(() => {
+    if (state) {
+      return {
+        sorting: state.sorting ?? sorting,
+        columnVisibility: state.columnVisibility ?? columnVisibility,
+        rowSelection: state.rowSelection ?? rowSelection,
+        columnFilters: state.columnFilters ?? columnFilters,
+        pagination: state.pagination ?? pagination,
+      };
+    }
+    return {
       sorting,
       columnVisibility,
       rowSelection,
       columnFilters,
       pagination,
-    },
+    };
+  }, [state, sorting, columnVisibility, rowSelection, columnFilters, pagination]);
+
+  const table = useReactTable({
+    data,
+    columns,
+    pageCount: manualPagination ? pageCount : undefined,
+    state: mergedState,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: onStateChange?.onSortingChange || setSorting,
