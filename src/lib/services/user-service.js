@@ -1,9 +1,11 @@
 import prisma from "@/lib/prisma";
 
 /**
- * Handles the creation of a new user and their associated shop and subscription
- * in a single atomic transaction. If the user already exists, it does nothing.
- * This is an "upsert" pattern specifically for the initial user sign-up.
+ * Service layer function that handles the creation of a new user and their associated shop and subscription
+ * in a single atomic transaction. If the user already exists, it checks for and creates a shop if needed.
+ *
+ * This is a complex business operation that spans multiple models (User, Shop, Subscription),
+ * which is why it belongs in the service layer rather than the data layer.
  *
  * @param {import('next-auth').User} user - The user object from the Auth.js callback.
  * @returns {Promise<import('@prisma/client').User | null>} The created or existing user, or null on failure.

@@ -1,21 +1,19 @@
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import slugify from "slugify";
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Normalizes a product name by converting it to a URL-friendly slug.
+ * Normalizes a product name for consistent storage and comparison.
  * This process includes:
- * - Transliterating Unicode characters to their closest ASCII equivalent.
- * - Converting the string to lowercase.
- * - Replacing spaces and special characters with a hyphen.
- * - Removing any characters that are not alphanumeric or hyphens.
+ * - Trimming leading and trailing whitespace
+ * - Collapsing multiple consecutive spaces into single spaces
+ * - Preserving case, special characters, and Unicode characters
  *
- * This ensures a consistent, URL-safe, and unique identifier for products,
- * preventing duplicates and improving data integrity.
+ * This ensures consistent data handling while maintaining human-readable
+ * product names that preserve the user's intended formatting.
  *
  * @param {string} name - The raw product name input.
  * @returns {string} The normalized product name.
@@ -25,15 +23,8 @@ export function normalizeProductName(name) {
     return "";
   }
 
-  // Configure slugify to handle product names appropriately.
-  // - `lower: true` converts the output to lowercase.
-  // - `strict: true` removes any characters that are not valid in a URL slug.
-  // - `trim: true` removes leading/trailing hyphens.
-  return slugify(name, {
-    lower: true,
-    strict: true,
-    trim: true,
-  });
+  // Trim whitespace and collapse multiple spaces
+  return name.trim().replace(/\s+/g, " ");
 }
 
 /**
