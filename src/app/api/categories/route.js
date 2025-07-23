@@ -18,6 +18,10 @@ export async function GET(request) {
   try {
     const session = await auth();
 
+    if (!session?.user?.shopId) {
+      return NextResponse.json({ error: 'User has no shop' }, { status: 403 });
+    }
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -31,7 +35,7 @@ export async function GET(request) {
       );
     }
 
-    const categories = await getAllCategoriesByShopId(shopId.id);
+    const categories = await getAllCategoriesByShopId(shopId);
 
     return NextResponse.json(categories);
   } catch (error) {
