@@ -26,7 +26,8 @@ import { toast } from "sonner";
 function ProductActionsCell({ product }) {
   const [showEditModal, setShowEditModal] = React.useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-const { mutateAsync: deleteProductAsync, isPending: isDeleting } = useDeleteProduct();
+  const { mutateAsync: deleteProductAsync, isPending: isDeleting } =
+    useDeleteProduct();
 
   const handleEdit = React.useCallback(() => {
     setShowEditModal(true);
@@ -41,7 +42,7 @@ const { mutateAsync: deleteProductAsync, isPending: isDeleting } = useDeleteProd
     setShowDeleteDialog(true);
   }, []);
 
-const handleDeleteConfirm = React.useCallback(() => {
+  const handleDeleteConfirm = React.useCallback(() => {
     setShowDeleteDialog(false);
 
     const deletePromise = deleteProductAsync(product.id);
@@ -50,7 +51,7 @@ const handleDeleteConfirm = React.useCallback(() => {
       loading: "Deleting product...",
       success: "Product deleted successfully!",
       error: (err) => {
-        console.error('Delete error:', err);
+        console.error("Delete error:", err);
         return err?.message || "Failed to delete product";
       },
     });
@@ -77,7 +78,10 @@ const handleDeleteConfirm = React.useCallback(() => {
             Edit product
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem
+            onClick={handleDelete}
+            className="text-destructive focus:text-destructive"
+          >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete product
           </DropdownMenuItem>

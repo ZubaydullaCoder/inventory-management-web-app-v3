@@ -92,6 +92,7 @@ async function exactMatch(query, shopId, limit = SEARCH_CONFIG.limits.exact) {
       p."sellingPrice",
       p."purchasePrice",
       p.unit,
+      p."createdAt",
       'exact' as match_type,
       1.0 as match_score,
       c.name as category_name
@@ -122,6 +123,7 @@ async function prefixMatch(query, shopId, limit = SEARCH_CONFIG.limits.prefix) {
       p."sellingPrice",
       p."purchasePrice",
       p.unit,
+      p."createdAt",
       'prefix' as match_type,
       0.9 as match_score,
       c.name as category_name
@@ -156,6 +158,7 @@ async function substringMatch(
       p."sellingPrice",
       p."purchasePrice",
       p.unit,
+      p."createdAt",
       'substring' as match_type,
       0.8 as match_score,
       c.name as category_name
@@ -194,6 +197,7 @@ async function acronymMatch(
       p."sellingPrice",
       p."purchasePrice",
       p.unit,
+      p."createdAt",
       'acronym' as match_type,
       0.7 as match_score,
       c.name as category_name
@@ -230,6 +234,7 @@ async function trigramMatch(
       p."sellingPrice",
       p."purchasePrice",
       p.unit,
+      p."createdAt",
       'trigram' as match_type,
       GREATEST(
         similarity(LOWER(p.name), LOWER(${query})),
@@ -269,6 +274,7 @@ async function levenshteinMatch(
       p."sellingPrice",
       p."purchasePrice",
       p.unit,
+      p."createdAt",
       'levenshtein' as match_type,
       (1.0 - (LEAST(
         levenshtein(LOWER(p.name), LOWER(${query})),
@@ -409,6 +415,7 @@ export async function simpleSearchProducts(query, shopId, maxResults = 50) {
         p."sellingPrice",
         p."purchasePrice",
         p.unit,
+        p."createdAt",
         c.name as category_name
       FROM "Product" p
       LEFT JOIN "Category" c ON p."categoryId" = c.id
@@ -441,6 +448,7 @@ export async function simpleSearchProducts(query, shopId, maxResults = 50) {
             name: product.category_name,
           }
         : null,
+      createdAt: product.createdAt,
     }));
   } catch (error) {
     console.error("Simple search error:", error);
