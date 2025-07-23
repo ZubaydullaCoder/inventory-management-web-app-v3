@@ -9,6 +9,7 @@ import {
   updateProductApi,
   checkProductNameApi,
   getProductsCursorApi,
+  deleteProductApi,
 } from "@/lib/api/products";
 
 /**
@@ -389,6 +390,66 @@ export function useUpdateProduct() {
           ],
         });
       }
+    },
+  });
+}
+
+/**
+ * Hook to delete a product with optimistic updates.
+ * @returns {Object} TanStack Query mutation object.
+ */
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteProductApi,
+    onMutate: async (productId) => {
+      // Cancel outgoing fetches for product lists
+      await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
+
+      // Snapshot previous cache
+      const previousLists = queryClient.getQueriesData({
+        queryKey: queryKeys.products.lists(),
+      });
+
+      // Optimistically remove product from all cached product lists
+      queryClient
+        .getQueryCache()
+        .findAll(queryKeys.products.lists())
+        .forEach((query) => {
+          const oldData = query.state.data;
+          if (oldData && Array.isArray(oldData.products)) {
+            queryClient.setQueryData(query.queryKey, {
+              ...oldData,
+              products: oldData.products.filter(
+                (product) => product.id !== productId
+              ),
+              totalProducts: Math.max((oldData.totalProducts || 0) - 1, 0),
+            });
+          }
+        });
+
+      // Also remove from session creations if it exists there
+      const sessionCreations = queryClient.getQueryData(queryKeys.products.sessionCreations()) || [];
+      queryClient.setQueryData(
+        queryKeys.products.sessionCreations(),
+        sessionCreations.filter((item) => item.data?.id !== productId)
+      );
+
+      return { previousLists };
+    },
+    onError: (_err, _productId, context) => {
+      // Rollback cache to previous state on error
+      if (context?.previousLists) {
+        context.previousLists.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+      console.error('Failed to delete product:', _err);
+    },
+    onSuccess: () => {
+      // Invalidate product lists to refetch from server and sync any changes
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
     },
   });
 }

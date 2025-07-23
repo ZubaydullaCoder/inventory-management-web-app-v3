@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MoreHorizontal, Edit, Copy } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import ProductEditModal from "@/components/features/products/edit/product-edit-modal";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { useDeleteProduct } from "@/hooks/use-product-queries";
 import { NumericFormat } from "react-number-format";
+import { toast } from "sonner";
 
 /**
  * Actions cell component for the products table.
@@ -22,11 +25,8 @@ import { NumericFormat } from "react-number-format";
  */
 function ProductActionsCell({ product }) {
   const [showEditModal, setShowEditModal] = React.useState(false);
-
-  const handleCopyId = React.useCallback(() => {
-    navigator.clipboard.writeText(product.id);
-    // You could add a toast notification here
-  }, [product.id]);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+const { mutateAsync: deleteProductAsync, isPending: isDeleting } = useDeleteProduct();
 
   const handleEdit = React.useCallback(() => {
     setShowEditModal(true);
@@ -36,6 +36,30 @@ function ProductActionsCell({ product }) {
     setShowEditModal(false);
     // The table will automatically update via TanStack Query cache invalidation
   }, []);
+
+  const handleDelete = React.useCallback(() => {
+    setShowDeleteDialog(true);
+  }, []);
+
+const handleDeleteConfirm = React.useCallback(() => {
+    setShowDeleteDialog(false);
+
+    const deletePromise = deleteProductAsync(product.id);
+
+    toast.promise(deletePromise, {
+      loading: "Deleting product...",
+      success: "Product deleted successfully!",
+      error: (err) => {
+        console.error('Delete error:', err);
+        return err?.message || "Failed to delete product";
+      },
+    });
+  }, [deleteProductAsync, product.id]);
+
+  // Skip actions for skeleton rows
+  if (product.isLoading) {
+    return <div className="h-8 w-8" />;
+  }
 
   return (
     <>
@@ -48,14 +72,14 @@ function ProductActionsCell({ product }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem onClick={handleCopyId}>
-            <Copy className="mr-2 h-4 w-4" />
-            Copy product ID
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleEdit}>
             <Edit className="mr-2 h-4 w-4" />
             Edit product
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete product
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -65,6 +89,15 @@ function ProductActionsCell({ product }) {
         onClose={() => setShowEditModal(false)}
         product={product}
         onSuccess={handleEditSuccess}
+      />
+
+      <DeleteConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Product"
+        description={`Are you sure you want to delete "${product.name}"? This action cannot be undone.`}
+        isPending={isDeleting}
       />
     </>
   );

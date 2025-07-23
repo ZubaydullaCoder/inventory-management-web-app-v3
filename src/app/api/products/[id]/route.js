@@ -7,6 +7,52 @@ import { updateProduct } from "@/lib/data/products";
 import prisma from "@/lib/prisma";
 
 /**
+ * Handles DELETE requests to remove a product for the authenticated user's shop.
+ * @param {Request} request
+ * @param {{ params: { id: string } }} context
+ * @returns {Promise<NextResponse>}
+ */
+export async function DELETE(request, { params }) {
+  const { id } = await params;
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const shop = await prisma.shop.findUnique({
+      where: { ownerId: session.user.id },
+    });
+
+    if (!shop) {
+      return NextResponse.json(
+        { error: "Shop not found for user" },
+        { status: 404 }
+      );
+    }
+
+    const deletedProduct = await prisma.product.delete({
+      where: { id },
+    });
+
+    return NextResponse.json(deletedProduct, { status: 200 });
+  } catch (error) {
+    // Handle Prisma record not found (P2025)
+    if (error.code === "P2025") {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    // TODO: Handle foreign key constraints, if applicable
+
+    console.error("DELETE /api/products/[id] Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * Handles PUT requests to update an existing product for the authenticated user's shop.
  * @param {Request} request
  * @param {{ params: { id: string } }} context

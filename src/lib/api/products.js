@@ -97,6 +97,23 @@ export async function checkProductNameApi(name, excludeId) {
 }
 
 /**
+ * Deletes a product by sending a DELETE request to the API.
+ * @param {string} productId - The ID of the product to delete.
+ * @returns {Promise<import('@prisma/client').Product>} The deleted product from the server.
+ */
+export async function deleteProductApi(productId) {
+  const response = await fetch(`/api/products/${productId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Failed to delete product");
+  }
+  return response.json();
+}
+
+/**
  * Fetches products using cursor-based pagination from the API.
  * @param {{cursor?: string, direction?: 'forward'|'backward', limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, enableFuzzySearch?: boolean}} options - Cursor pagination, sorting, and filtering options.
  * @returns {Promise<import('@/lib/data/products').CursorPaginatedProductsResult>}
