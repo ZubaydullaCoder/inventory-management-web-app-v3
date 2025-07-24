@@ -28,7 +28,7 @@ export default function ProductCreationCockpit() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[600px]">
-      {/* Left Column: Product Form */}
+      {/* Left Column: Product Form with integrated category management */}
       <div className="space-y-4">
         <div className="bg-card border border-border rounded-lg p-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">
@@ -39,12 +39,14 @@ export default function ProductCreationCockpit() {
       </div>
 
       {/* Right Column: Session Creation List */}
-      <div className="space-y-4">
-        <div className="bg-card border border-border rounded-lg p-6 h-full">
-          <h2 className="text-xl font-semibold text-foreground mb-4">
+      <div className="flex flex-col space-y-4">
+        <div className="bg-card border border-border rounded-lg p-6 flex flex-col flex-1 min-h-0">
+          <h2 className="text-xl font-semibold text-foreground mb-4 flex-shrink-0">
             Recently Added
           </h2>
-          <ProductSessionCreationList products={sessionProducts} />
+          <div className="flex-1 min-h-0">
+            <ProductSessionCreationList products={sessionProducts} />
+          </div>
         </div>
       </div>
     </div>

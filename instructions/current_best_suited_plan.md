@@ -1,105 +1,303 @@
-# Current Best Suited Plan for Bulk Actions Implementation
+# Product Creation Form - Category Section Refactoring Plan
 
-## Objective
+## Overview
 
-Adapt the 'bulk actions' UI feature from the shadcn-table-main repository to the inventory-nextjs-copilot-pro-chat-mode-7 project. The bulk actions UI should appear at the bottom when products are selected in the product data table.
+Refactor the product creation form to separate the category section into a dedicated card-styled component with enhanced functionality including filtering, CRUD operations, and cursor-based pagination.
 
-## Purpose and Expected Behavior
+## Current State
 
-### Current Behavior
+- Category selection uses a dropdown component (`CategoryCreatableSelect`)
+- Categories can be created inline within the dropdown
+- No separate visual distinction for category management
+- Limited category management features
 
-The current setup in the inventory-nextjs codebase has a bulk actions component that appears above the data table when products are selected.
+## Target State
 
-### Target Behavior
+- Separate card-styled category management section
+- Full CRUD operations for categories
+- Search/filter functionality
+- Cursor-based pagination for large category lists
+- Visual separation from product form fields
+- Maintain integration with product form state
 
-Modify this functionality such that the bulk actions UI appears at the bottom of the page instead of the top, similar to the approach used in the shadcn-table-main repository.
+## Implementation Phases
 
-### Scenarios and Edge Cases
+### ✅ Phase 1: Create Category Management Component Structure (COMPLETED)
 
-- **When the bulk action toolbar appears:** The toolbar should only appear when one or more products are selected.
-- **Clear Selection:** Has to remain intuitive, possibly with an 'X' button to remove the selection.
-- **Error Handling:** If a bulk operation fails, proper feedback should be given to the user.
+**Files created:**
 
-## Implementation Plan
+1. ✅ `src/components/features/categories/category-management-card.jsx`
+   - Main container component with Card styling
+   - Orchestrates all category functionality
+   - Handles search state and category selection
+   
+2. ✅ `src/components/features/categories/category-list.jsx`
+   - Displays paginated category list
+   - Basic pagination ready for Phase 2 enhancement
+   - Shows edit/delete actions per category
+   - Includes loading, error, and empty states
 
-### Analysis of Current System
+3. ✅ `src/components/features/categories/category-search-filter.jsx`
+   - Search input for filtering categories
+   - Real-time search with debouncing (300ms)
+   - Controlled and uncontrolled input support
 
-1. **Current Implementation:** The system already has row selection working with `ProductBulkActions` appearing in the toolbar at the top.
-2. **Reference Implementation:** The shadcn-table-main uses `DataTableActionBar` that renders at the bottom using React Portal with animations.
-3. **Key Components to Modify:**
-   - `ProductBulkActions` - needs to be adapted for bottom positioning
-   - `ProductTableContainer` - may need modification for integration
-   - `DataTableToolbar` - current top positioning logic
+4. ✅ `src/components/features/categories/category-create-edit-form.jsx`
+   - Inline form for creating new categories
+   - Edit mode for existing categories
+   - Name validation and duplicate checking with real-time feedback
+   - Toast notifications for success/error states
 
-### Implementation Steps
+5. ✅ `src/components/features/categories/category-item.jsx`
+   - Individual category item component
+   - Shows category name with edit/delete actions
+   - Handles selection for product form with visual feedback
+   - Inline edit and delete confirmation modes
 
-#### Step 1: Create Bottom Action Bar Component
+6. ✅ `src/components/features/categories/index.js`
+   - Centralized exports for easy component imports
 
-- Create a new `ProductBottomActionBar` component based on `DataTableActionBar` from shadcn-table-main
-- Use React Portal to render at the bottom of the page
-- Include smooth animations using framer-motion or similar
-- Handle keyboard shortcuts (Escape to clear selection)
+7. ✅ `src/app/(dashboard)/category-test/page.jsx`
+   - Test page demonstrating Phase 1 functionality
+   - Includes debug information and feature showcase
 
-#### Step 2: Adapt ProductBulkActions
+### ✅ Phase 2: Implement Category Pagination Hook (COMPLETED)
 
-- Modify `ProductBulkActions` to work within the new bottom action bar
-- Maintain existing functionality (delete, update category)
-- Adapt styling for bottom positioning
+**Files created/modified:**
 
-#### Step 3: Update Integration Points
+1. ✅ `src/hooks/use-category-pagination.js`
+   - Implemented cursor-based pagination logic with useInfiniteQuery
+   - Created both infinite scroll and simple pagination variants
+   - Handle filter/search state with debouncing
+   - Integrated with existing category queries
 
-- Modify `ProductTableContainer` to use the new bottom action bar
-- Remove bulk actions from the top toolbar (`DataTableToolbar`)
-- Ensure proper state management and event handling
+2. ✅ Updated `src/lib/api/categories.js`
+   - Added `getCategoriesPaginatedApi` function for cursor-based pagination
+   - Added search/filter parameters support
+   - Maintains backward compatibility with existing API
 
-#### Step 4: Install Dependencies
+3. ✅ Created `src/app/api/categories/cursor/route.js`
+   - Implemented server-side cursor-based pagination
+   - Added search functionality with case-insensitive filtering
+   - Added proper validation and error handling
 
-- Add framer-motion for animations if not already present
-- Ensure React Portal compatibility
+4. ✅ Updated `src/lib/data/categories.js`
+   - Added `getCategoriesByShopIdCursor` function
+   - Implemented cursor condition building and ordering
+   - Added helper functions for cursor generation
 
-### Technical Implementation Details
+5. ✅ Updated `src/lib/queryKeys.js`
+   - Added pagination-specific query keys
+   - Ensures proper cache management for paginated queries
 
-#### Component Structure
+6. ✅ Updated `src/components/features/categories/category-list.jsx`
+   - Integrated pagination hooks with fallback to non-paginated
+   - Added pagination controls (Previous/Next buttons)
+   - Maintains backward compatibility
 
-```
-ProductDisplayList
-├── ProductTableContainer
-│   ├── DataTable (without bulk actions in toolbar)
-│   └── ProductBottomActionBar (new component)
-│       └── ProductBulkActions (adapted)
-```
+### ✅ Phase 3: Integrate Category Card into Product Forms (COMPLETED)
 
-#### Key Features to Implement
+**Files modified:**
 
-- **Portal Rendering:** Use ReactDOM.createPortal to render at document.body
-- **Animation:** Smooth slide-up/slide-down transitions
-- **Keyboard Support:** ESC key to clear selection
-- **Responsive Design:** Adapt to different screen sizes
-- **Z-index Management:** Ensure proper layering
+1. ✅ `src/components/features/products/creation/product-creation-form.jsx`
 
-### Files to Modify/Create
+   - ✅ Removed `CategoryCreatableSelect` component import
+   - ✅ Added `CategoryManagementCard` import from categories index
+   - ✅ Added hidden form field for categoryId integration
+   - ✅ Added `watch` function to monitor categoryId changes
+   - ✅ Integrated new category management card with selection handler
+   - ✅ Added `handleCategorySelect` function to update form state
 
-1. **New Files:**
+2. ✅ `src/components/features/products/creation/product-creation-cockpit.jsx`
 
-   - `src/components/ui/product-bottom-action-bar.jsx`
+   - ✅ Updated layout from 2-column grid to single-column stacked layout
+   - ✅ Maintained responsive design principles
+   - ✅ Improved spacing and visual hierarchy
+   - ✅ Category card now integrated within product form section
 
-2. **Modified Files:**
-   - `src/components/features/products/product-bulk-actions.jsx`
-   - `src/components/features/products/display/product-table-container.jsx`
-   - `src/components/ui/data-table-toolbar.jsx`
+3. ✅ `src/components/features/products/edit/product-edit-form.jsx`
 
-### Testing Considerations
+   - ✅ Applied same changes as creation form
+   - ✅ Replaced `CategoryCreatableSelect` with `CategoryManagementCard`
+   - ✅ Added category selection handler and form integration
+   - ✅ Ensured selected category is properly highlighted
+   - ✅ Added hidden categoryId field for form binding
 
-- Verify selection state management
-- Test animations and transitions
-- Ensure keyboard shortcuts work
-- Test responsive behavior
-- Verify bulk operations still work correctly
+4. ✅ `src/hooks/use-product-creation-form.js`
+   - ✅ No changes required - hook already exposes `watch` function needed for integration
+   - ✅ Category persistence between form resets already working via existing logic
 
-### Success Criteria
+### ✅ Phase 4: Implement Enhanced Category CRUD Operations (COMPLETED)
 
-- Bulk actions appear at the bottom when products are selected
-- Smooth animations for show/hide transitions
-- Existing bulk operations (delete, category update) work correctly
-- Clean UI with no conflicts between top and bottom toolbars
-- Keyboard accessibility maintained
+**Features implemented:**
+
+1. ✅ **Create Category**
+
+   - ✅ Inline creation form at top of card (already implemented in Phase 1)
+   - ✅ Real-time duplicate checking with debouncing
+   - ✅ Optimistic updates with TanStack Query
+   - ✅ Toast notifications for success/error states
+
+2. ✅ **Edit Category**
+
+   - ✅ Inline editing with save/cancel functionality
+   - ✅ Name validation and normalization
+   - ✅ Duplicate name checking (excluding current category)
+   - ✅ Optimistic updates for instant UI feedback
+
+3. ✅ **Delete Category - Enhanced Safety**
+
+   - ✅ Confirmation dialog with clear messaging
+   - ✅ Server-side safety checks for products using category
+   - ✅ Prevent deletion if products are assigned
+   - ✅ Detailed error messages with product count
+   - ✅ Enhanced error handling for various edge cases
+
+4. ✅ **Select Category**
+   - ✅ Click to select for product form integration
+   - ✅ Visual feedback with checkmark and highlighting
+   - ✅ Smooth sync with form state via React Hook Form
+
+**New files created:**
+
+1. ✅ `src/app/api/categories/[id]/route.js`
+   - Complete API endpoint for individual category operations
+   - PUT method for category updates with validation
+   - DELETE method with enhanced safety checks
+   - Comprehensive error handling for all scenarios
+
+2. ✅ `src/app/api/categories/[id]/usage/route.js`
+   - New endpoint to check category usage by products
+   - Returns product count and usage status
+   - Security checks to ensure category belongs to user's shop
+
+**Enhanced files:**
+
+3. ✅ `src/lib/data/categories.js`
+   - Added `checkCategoryUsage()` function for safety checks
+   - Enhanced `deleteCategory()` with force option and usage validation
+   - Improved error messages with detailed product count information
+
+4. ✅ `src/lib/api/categories.js`
+   - Added `getCategoryUsageApi()` function for usage information
+   - Updated API layer to support new functionality
+
+5. ✅ `src/hooks/use-category-queries.js`
+   - Added `useCategoryUsage()` hook for product count queries
+   - Enhanced existing hooks with better error handling
+
+6. ✅ `src/lib/queryKeys.js`
+   - Added `usage(categoryId)` query key for caching usage information
+
+**Technical Enhancements:**
+
+- ✅ **Enhanced Error Handling**: Comprehensive error messages for duplicate names, missing categories, and constraint violations
+- ✅ **Safety Checks**: Server-side validation prevents deletion of categories with assigned products
+- ✅ **Optimistic Updates**: All operations provide instant UI feedback with rollback on error
+- ✅ **Real-time Validation**: Name checking with debouncing and visual feedback
+- ✅ **Product Count Display**: Ready for UI enhancement to show usage information
+
+### Phase 5: Enhance UI/UX
+
+**Improvements:**
+
+1. **Visual Design**
+
+   - Use shadcn Card components consistently
+   - Add proper spacing and typography
+   - Implement loading states
+   - Add empty states
+
+2. **Interactions**
+
+   - Smooth transitions for edit mode
+   - Keyboard navigation support
+   - Focus management
+
+3. **Responsive Design**
+   - Stack vertically on mobile
+   - Adjust card height for different screens
+   - Ensure touch-friendly interactions
+
+### Phase 6: Testing  Optimization
+
+**Tasks:**
+
+1. **Performance**
+
+   - Implement virtual scrolling for large lists
+   - Optimize re-renders
+   - Cache pagination results
+
+2. **Edge Cases**
+
+   - Handle API errors gracefully
+   - Test with no categories
+   - Test with many categories (100+)
+
+3. **Integration**
+   - Ensure product form validation works
+   - Test category persistence
+   - Verify optimistic updates
+
+## Technical Considerations
+
+### State Management
+
+- Use React Hook Form for category selection integration
+- Leverage TanStack Query for server state
+- Local state for UI interactions (edit mode, search)
+
+### Reusable Components
+
+- Leverage existing shadcn components:
+  - Card, CardHeader, CardContent
+  - Input for search
+  - Button for actions
+  - ScrollArea for list
+
+### API Integration
+
+- Extend existing category API endpoints
+- Maintain backward compatibility
+- Use existing hooks where possible
+
+### Design Patterns
+
+- Follow existing codebase patterns
+- Use composition for flexibility
+- Implement proper error boundaries
+
+## Success Criteria
+
+1. Category section is visually separated in a card
+2. Users can search/filter categories efficiently
+3. CRUD operations work seamlessly
+4. Pagination handles large datasets
+5. Integration with product form is smooth
+6. No regression in existing functionality
+
+## Next Steps
+
+**Phase 1 Status: ✅ COMPLETED**
+- All component structures created and tested
+- Full CRUD functionality implemented
+- Search and filtering working
+- Card-based UI with shadcn components
+- Test page created at `/category-test`
+
+**Upcoming phases:**
+
+1. ✅ Phase 1 - Create component structure (COMPLETED)
+2. ✅ Phase 2 - Implement cursor-based pagination (COMPLETED)
+3. ✅ Phase 3 - Integration with product forms (COMPLETED)
+4. ✅ Phase 4 - Enhanced CRUD operations (COMPLETED)
+5. ⏳ Phase 5 - Polish UI/UX
+6. ⏳ Phase 6 - Testing & optimization
+
+<citations>
+  <document>
+      <document_type>RULE</document_type>
+      <document_id>IR9THCr4cENzfwchO9Aiom</document_id>
+  </document>
+</citations>

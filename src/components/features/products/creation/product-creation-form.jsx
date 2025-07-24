@@ -3,7 +3,7 @@
 import ProductNameField from "./product-name-field";
 import NumberField from "../number-field";
 import UnitSelectField from "../unit-select-field";
-import CategoryCreatableSelect from "../category-creatable-select";
+import { CategorySection } from "@/components/features/categories";
 import {
   Form,
   FormField,
@@ -31,11 +31,30 @@ export default function ProductCreationForm() {
     nameCheckError,
     showAvailable,
     isSubmitDisabled,
+    watch,
   } = useProductCreationForm();
+
+  // Watch the categoryId to display selected category
+  const selectedCategoryId = watch("categoryId");
+
+  // Handle category selection from the CategoryManagementCard
+  const handleCategorySelect = (categoryId) => {
+    form.setValue("categoryId", categoryId, {
+      shouldValidate: false, // Don't trigger validation
+      shouldDirty: true, // Mark as dirty for unsaved changes detection
+      shouldTouch: false, // Don't mark as touched to avoid validation triggers
+    });
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Hidden categoryId field for form integration */}
+        <FormField
+          control={control}
+          name="categoryId"
+          render={({ field }) => <input type="hidden" {...field} />}
+        />
         <ProductNameField
           control={control}
           nameInputRef={nameInputRef}
@@ -89,10 +108,13 @@ export default function ProductCreationForm() {
           label="Unit of Measure"
         />
 
-        <CategoryCreatableSelect
-          control={control}
-          name="categoryId"
-          label="Category"
+        {/* Category Section */}
+        <CategorySection
+          selectedCategoryId={selectedCategoryId}
+          onCategorySelect={handleCategorySelect}
+          title="Category"
+          showCreateForm={true}
+          showTitle={true}
         />
 
         <FormField

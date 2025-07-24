@@ -11,6 +11,7 @@ import {
   updateCategoryApi,
   checkCategoryNameApi,
   deleteCategoryApi,
+  getCategoryUsageApi,
 } from "@/lib/api/categories";
 import { toast } from "sonner";
 
@@ -182,6 +183,22 @@ export function useUpdateCategory() {
         });
       }
     },
+  });
+}
+
+/**
+ * Hook to get category usage information (product count).
+ * @param {string} categoryId - The category ID to check.
+ * @param {{ enabled?: boolean }} options
+ * @returns {Object} TanStack Query result object.
+ */
+export function useCategoryUsage(categoryId, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: [...queryKeys.categories.usage(categoryId)],
+    queryFn: () => getCategoryUsageApi(categoryId),
+    enabled: enabled && Boolean(categoryId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
 

@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react";
 import ProductNameField from "../creation/product-name-field";
 import NumberField from "../number-field";
 import UnitSelectField from "../unit-select-field";
-import CategoryCreatableSelect from "../category-creatable-select";
+import { CategoryManagementCard } from "@/components/features/categories";
 
 export default function ProductEditForm({
   form,
@@ -29,9 +29,23 @@ export default function ProductEditForm({
   isSubmitDisabled,
   formState,
 }) {
+  // Watch the categoryId to display selected category
+  const selectedCategoryId = form.watch("categoryId");
+
+  // Handle category selection from the CategoryManagementCard
+  const handleCategorySelect = (categoryId) => {
+    form.setValue("categoryId", categoryId);
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Hidden categoryId field for form integration */}
+        <FormField
+          control={control}
+          name="categoryId"
+          render={({ field }) => <input type="hidden" {...field} />}
+        />
         <ProductNameField
           control={control}
           nameInputRef={null}
@@ -85,10 +99,12 @@ export default function ProductEditForm({
           label="Unit of Measure"
         />
 
-        <CategoryCreatableSelect
-          control={control}
-          name="categoryId"
-          label="Category"
+        {/* Category Management Card */}
+        <CategoryManagementCard
+          selectedCategoryId={selectedCategoryId}
+          onCategorySelect={handleCategorySelect}
+          title="Select Category"
+          showCreateForm={true}
         />
 
         <FormField

@@ -34,6 +34,8 @@ export function useProductCreationForm({ excludeId } = {}) {
   // react-hook-form setup
   const form = useForm({
     resolver: zodResolver(productCreateSchema),
+    mode: 'onSubmit', // Only validate on form submission
+    reValidateMode: 'onChange', // Clear errors as user fixes them
     defaultValues: initialValues,
   });
   const { control, handleSubmit, reset, watch, formState } = form;

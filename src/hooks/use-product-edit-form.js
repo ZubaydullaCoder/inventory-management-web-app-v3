@@ -25,6 +25,8 @@ export function useProductEditForm({ product, isOpen, onSuccess, onClose }) {
   // react-hook-form setup
   const form = useForm({
     resolver: zodResolver(productCreateSchema),
+    mode: 'onSubmit', // Only validate on form submission
+    reValidateMode: 'onChange', // Clear errors as user fixes them
     defaultValues: {
       name: "",
       sellingPrice: "",

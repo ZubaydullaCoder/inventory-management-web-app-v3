@@ -20,9 +20,15 @@ export const queryKeys = {
     all: () => ["categories"],
     lists: () => [...queryKeys.categories.all(), "list"],
     list: (filters) => [...queryKeys.categories.lists(), { filters }],
+    paginated: (search, pageSize) => [
+      ...queryKeys.categories.all(),
+      "paginated",
+      { search, pageSize },
+    ],
     details: () => [...queryKeys.categories.all(), "detail"],
     detail: (id) => [...queryKeys.categories.details(), id],
     checkName: (name) => [...queryKeys.categories.all(), "checkName", name],
+    usage: (categoryId) => [...queryKeys.categories.all(), "usage", categoryId],
   },
   // ... other resource keys will be added here in the future
 };

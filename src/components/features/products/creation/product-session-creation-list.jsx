@@ -62,18 +62,21 @@ export default function ProductSessionCreationList({ products = [] }) {
 
   return (
     <>
-      <div className="space-y-3 max-h-[500px] overflow-y-auto">
-        {products.map(({ data: product, status, optimisticId }) => (
-          <ProductSessionCreationItem
-            key={optimisticId}
-            product={product}
-            status={status}
-            onEdit={handleEditProduct}
-          />
-        ))}
+      <div className="flex flex-col h-full">
+        {/* Scrollable products list */}
+        <div className="flex-1 space-y-3 overflow-y-auto min-h-0">
+          {products.map(({ data: product, status, optimisticId }) => (
+            <ProductSessionCreationItem
+              key={optimisticId}
+              product={product}
+              status={status}
+              onEdit={handleEditProduct}
+            />
+          ))}
+        </div>
 
-        {/* List Summary */}
-        <div className="pt-4 border-t border-border">
+        {/* Fixed summary at bottom */}
+        <div className="flex-shrink-0 pt-4 mt-4 border-t border-border">
           <p className="text-sm text-muted-foreground text-center">
             {products.length} product{products.length !== 1 ? "s" : ""} in this
             session
