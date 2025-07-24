@@ -13,26 +13,17 @@ import { cn } from "@/lib/utils";
  * @param {import("@tanstack/react-table").Table} props.table - The table instance
  * @param {string} [props.className] - Additional CSS classes
  * @param {React.ReactNode} [props.children] - Additional toolbar content
- * @param {React.ComponentType} [props.bulkActionsComponent] - Component to render when rows are selected
+ * @param {React.ComponentType} [props.bulkActionsComponent] - Component to render when rows are selected (deprecated - now handled at bottom)
  */
 export function DataTableToolbar({ table, className, children, bulkActionsComponent: BulkActionsComponent, ...props }) {
   const isFiltered = table.getState().columnFilters.length > 0;
-  const selectedRowCount = table.getFilteredSelectedRowModel().rows.length;
 
   return (
     <div
-      className={cn("flex flex-col space-y-2", className)}
+      className={cn("flex items-center justify-between", className)}
       {...props}
     >
-      {selectedRowCount > 0 && BulkActionsComponent && (
-        <BulkActionsComponent
-          selectedProducts={table.getFilteredSelectedRowModel().rows.map(row => row.original)}
-          onClearSelection={() => table.resetRowSelection()}
-          table={table}
-        />
-      )}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-center space-x-2">
+      <div className="flex flex-1 items-center space-x-2">
         <Input
           placeholder="Filter products..."
           value={table.getColumn("name")?.getFilterValue() ?? ""}
@@ -52,10 +43,9 @@ export function DataTableToolbar({ table, className, children, bulkActionsCompon
           </Button>
         )}
       </div>
-        <div className="flex items-center space-x-2">
-          {children}
-          <DataTableViewOptions table={table} />
-        </div>
+      <div className="flex items-center space-x-2">
+        {children}
+        <DataTableViewOptions table={table} />
       </div>
     </div>
   );

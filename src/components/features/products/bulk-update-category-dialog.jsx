@@ -4,13 +4,13 @@
 
 import * as React from "react";
 import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetDescription, 
-  SheetFooter 
-} from "@/components/ui/sheet";
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { 
   Select, 
@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Bulk update category dialog component.
- * Uses Sheet component for consistent UX and follows existing patterns.
+ * Uses Dialog component for consistent UX with other modals and follows existing patterns.
  *
  * @param {Object} props
  * @param {boolean} props.open - Whether the dialog is open
@@ -162,12 +162,12 @@ export function BulkUpdateCategoryDialog({
   }, [selectedCount, selectedProducts]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[540px]">
-        <SheetHeader>
-          <SheetTitle>{dialogTitle}</SheetTitle>
-          <SheetDescription>{dialogDescription}</SheetDescription>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
+        </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
@@ -201,7 +201,7 @@ export function BulkUpdateCategoryDialog({
           </div>
         </div>
         
-        <SheetFooter className="flex flex-row justify-end gap-2">
+        <DialogFooter className="flex flex-row justify-end gap-2 sm:justify-end">
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
@@ -223,8 +223,8 @@ export function BulkUpdateCategoryDialog({
           >
             {isUpdating ? "Updating..." : `Update ${selectedCount} Product${selectedCount > 1 ? 's' : ''}`}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

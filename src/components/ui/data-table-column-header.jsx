@@ -67,7 +67,7 @@ export function DataTableColumnHeader({ column, title, className, ...props }) {
               <ChevronDown className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
               Desc
             </DropdownMenuCheckboxItem>
-            {column.getIsSorted() && (
+{column.getIsSorted() && (
               <DropdownMenuItem onClick={() => column.clearSorting()}>
                 <X className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
                 Clear sort

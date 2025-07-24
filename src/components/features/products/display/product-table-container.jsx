@@ -51,9 +51,26 @@ export default function ProductTableContainer({
     return products;
   }, [isLoading, products, skeletonRowCount]);
 
+  // Get selected products for the bottom action bar
+  const selectedProducts = React.useMemo(() => {
+    if (!tableState.rowSelection || Object.keys(tableState.rowSelection).length === 0) {
+      return [];
+    }
+    
+    return displayData.filter((product, index) => {
+      return tableState.rowSelection[index] && !product.isLoading;
+    });
+  }, [displayData, tableState.rowSelection]);
+
+  const handleClearSelection = React.useCallback(() => {
+    if (handleStateChange.onRowSelectionChange) {
+      handleStateChange.onRowSelectionChange({});
+    }
+  }, [handleStateChange]);
 
   return (
-    <DataTable
+    <>
+      <DataTable
         columns={productColumns}
         data={displayData}
         state={{
@@ -76,10 +93,17 @@ export default function ProductTableContainer({
         onCursorChange={useCursorPagination ? handleCursorChange : undefined}
         onPageSizeChange={useCursorPagination ? handlePageSizeChange : undefined}
         totalItems={totalProducts}
-        // Common props
+        // Common props - remove bulk actions from toolbar
         showToolbar={true}
-        bulkActionsComponent={ProductBulkActions}
+        bulkActionsComponent={null}
         isLoading={isLoading} // Pass loading state for selective skeleton rendering
       />
+      
+      {/* Bottom Action Bar */}
+      <ProductBulkActions
+        selectedProducts={selectedProducts}
+        onClearSelection={handleClearSelection}
+      />
+    </>
   );
 }

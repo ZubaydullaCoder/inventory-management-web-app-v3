@@ -192,9 +192,17 @@ export function useTableCursorUrlState(
           cursor: null, // Reset cursor when sorting changes
           direction: "forward",
         });
+      } else {
+        // Handle clear sorting: reset to default sort
+        updateUrl({
+          sortBy: defaultState.sortBy,
+          sortOrder: defaultState.sortOrder,
+          cursor: null, // Reset cursor when sorting changes
+          direction: "forward",
+        });
       }
     },
-    [updateUrl, tableState.sorting]
+    [updateUrl, tableState.sorting, defaultState]
   );
 
   // Handle filter changes (local state only, resets cursor when debounced)

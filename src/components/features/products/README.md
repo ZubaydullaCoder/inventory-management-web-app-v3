@@ -30,7 +30,10 @@ The `ProductBulkActions` component provides a toolbar that appears when products
 ```
 
 **Design:**
-- Appears above the data table when products are selected
+- Appears at the bottom of the page as a floating action bar when products are selected
+- Uses React Portal for proper positioning and z-index management
+- Includes smooth slide-up/slide-down animations using framer-motion
+- Features a selection counter with clear button and keyboard support (Escape key)
 - Uses consistent styling with other UI components
 - Includes proper icons for visual clarity
 - Destructive styling for delete actions
