@@ -43,6 +43,12 @@ export const productCreateSchema = z.object({
 });
 
 /**
+ * @description Zod schema for validating partial updates to a product.
+ * This makes all fields optional to support PATCH-like semantics in PUT requests.
+ */
+export const productUpdateSchema = productCreateSchema.partial();
+
+/**
  * @description Zod schema for validating category creation input.
  * This is used in the API route to ensure data integrity.
  */

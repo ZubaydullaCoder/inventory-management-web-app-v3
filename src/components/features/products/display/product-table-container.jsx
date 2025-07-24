@@ -3,6 +3,7 @@
 import * as React from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { productColumns } from "./product-table-columns";
+import { ProductBulkActions } from "../product-bulk-actions";
 
 /**
  * Container component for the product table.
@@ -10,8 +11,8 @@ import { productColumns } from "./product-table-columns";
  *
  * @param {Object} props
  * @param {Array} props.products - Product data to display
- * @param {Object} props.tableState - Table state including sorting, filters, and pagination
- * @param {Object} props.handleStateChange - State change handlers for the table
+ * @param {Object} props.tableState - Table state including sorting, filters, pagination, and row selection
+ * @param {Object} props.handleStateChange - State change handlers for the table including onRowSelectionChange
  * @param {Object} props.paginationMetadata - Pagination metadata (offset or cursor based)
  * @param {boolean} props.useCursorPagination - Whether to use cursor-based pagination
  * @param {Function} props.handleCursorChange - Handler for cursor changes (cursor pagination only)
@@ -50,32 +51,35 @@ export default function ProductTableContainer({
     return products;
   }, [isLoading, products, skeletonRowCount]);
 
+
   return (
     <DataTable
-      columns={productColumns}
-      data={displayData}
-      state={{
-        sorting: tableState.sorting,
-        columnFilters: tableState.columnFilters,
-        pagination: useCursorPagination ? undefined : tableState.pagination,
-      }}
-      onStateChange={handleStateChange}
-      manualPagination={true}
-      manualSorting={true}
-      manualFiltering={true}
-      // Props for offset pagination
-      pageCount={useCursorPagination ? undefined : paginationMetadata.pageCount}
-      // Props for cursor pagination
-      useCursorPagination={useCursorPagination}
-      cursorPaginationState={
-        useCursorPagination ? paginationMetadata : undefined
-      }
-      onCursorChange={useCursorPagination ? handleCursorChange : undefined}
-      onPageSizeChange={useCursorPagination ? handlePageSizeChange : undefined}
-      totalItems={totalProducts}
-      // Common props
-      showToolbar={true}
-      isLoading={isLoading} // Pass loading state for selective skeleton rendering
-    />
+        columns={productColumns}
+        data={displayData}
+        state={{
+          sorting: tableState.sorting,
+          columnFilters: tableState.columnFilters,
+          pagination: useCursorPagination ? undefined : tableState.pagination,
+          rowSelection: tableState.rowSelection,
+        }}
+        onStateChange={handleStateChange}
+        manualPagination={true}
+        manualSorting={true}
+        manualFiltering={true}
+        // Props for offset pagination
+        pageCount={useCursorPagination ? undefined : paginationMetadata.pageCount}
+        // Props for cursor pagination
+        useCursorPagination={useCursorPagination}
+        cursorPaginationState={
+          useCursorPagination ? paginationMetadata : undefined
+        }
+        onCursorChange={useCursorPagination ? handleCursorChange : undefined}
+        onPageSizeChange={useCursorPagination ? handlePageSizeChange : undefined}
+        totalItems={totalProducts}
+        // Common props
+        showToolbar={true}
+        bulkActionsComponent={ProductBulkActions}
+        isLoading={isLoading} // Pass loading state for selective skeleton rendering
+      />
   );
 }

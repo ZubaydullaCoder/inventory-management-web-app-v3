@@ -255,7 +255,10 @@ export function useUpdateProduct() {
     mutationFn: ({ productId, productData }) =>
       updateProductApi(productId, productData),
     onMutate: async ({ productId, productData }) => {
-      const normalizedName = normalizeProductName(productData.name);
+      // Only normalize name if it's provided in the update
+      const normalizedName = productData.name !== undefined 
+        ? normalizeProductName(productData.name) 
+        : undefined;
 
       // --- NEW: Capture the old normalized name from existing cache ---
       let oldNormalizedName = null;
@@ -314,7 +317,8 @@ export function useUpdateProduct() {
                   ? {
                       ...product,
                       ...productData,
-                      name: normalizedName,
+                      // Only update name if it was provided in productData
+                      ...(normalizedName !== undefined && { name: normalizedName }),
                       category: resolvedCategory, // Include resolved category object
                     }
                   : product
@@ -334,7 +338,8 @@ export function useUpdateProduct() {
                 data: {
                   ...item.data,
                   ...productData,
-                  name: normalizedName,
+                  // Only update name if it was provided in productData
+                  ...(normalizedName !== undefined && { name: normalizedName }),
                   category: resolvedCategory,
                 },
               }
@@ -448,6 +453,136 @@ export function useDeleteProduct() {
       console.error('Failed to delete product:', _err);
     },
     onSuccess: () => {
+      // Invalidate product lists to refetch from server and sync any changes
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to delete multiple products with optimistic updates and proper error handling.
+ * Provides immediate UI feedback by removing all selected products optimistically,
+ * then handles individual failures gracefully with partial rollback.
+ * @returns {Object} TanStack Query mutation object.
+ */
+export function useBulkDeleteProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (productIds) => {
+      // Delete products sequentially to avoid overwhelming the server
+      const results = [];
+      const errors = [];
+      
+      for (const productId of productIds) {
+        try {
+          const result = await deleteProductApi(productId);
+          results.push({ productId, success: true, result });
+        } catch (error) {
+          results.push({ productId, success: false, error });
+          errors.push({ productId, error });
+        }
+      }
+      
+      const data = {
+        results,
+        errors,
+        successCount: results.filter(r => r.success).length,
+        failureCount: errors.length,
+        totalCount: productIds.length,
+      };
+      
+      // If all deletions failed, throw an error to trigger the error toast
+      if (data.failureCount === data.totalCount) {
+        throw new Error(`Failed to delete all ${data.totalCount} products`);
+      }
+      
+      return data;
+    },
+    onMutate: async (productIds) => {
+      // Cancel outgoing fetches for product lists
+      await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
+
+      // Snapshot previous cache
+      const previousLists = queryClient.getQueriesData({
+        queryKey: queryKeys.products.lists(),
+      });
+
+      // Store product data for potential rollback of failed deletions
+      const productsToDelete = [];
+      queryClient
+        .getQueryCache()
+        .findAll(queryKeys.products.lists())
+        .forEach((query) => {
+          const data = query.state.data;
+          if (data && Array.isArray(data.products)) {
+            data.products.forEach(product => {
+              if (productIds.includes(product.id)) {
+                productsToDelete.push(product);
+              }
+            });
+          }
+        });
+
+      // Optimistically remove all selected products from cached product lists
+      queryClient
+        .getQueryCache()
+        .findAll(queryKeys.products.lists())
+        .forEach((query) => {
+          const oldData = query.state.data;
+          if (oldData && Array.isArray(oldData.products)) {
+            queryClient.setQueryData(query.queryKey, {
+              ...oldData,
+              products: oldData.products.filter(
+                (product) => !productIds.includes(product.id)
+              ),
+              totalProducts: Math.max((oldData.totalProducts || 0) - productIds.length, 0),
+            });
+          }
+        });
+
+      // Also remove from session creations if they exist there
+      const sessionCreations = queryClient.getQueryData(queryKeys.products.sessionCreations()) || [];
+      queryClient.setQueryData(
+        queryKeys.products.sessionCreations(),
+        sessionCreations.filter((item) => !productIds.includes(item.data?.id))
+      );
+
+      return { previousLists, productsToDelete, productIds };
+    },
+    onError: (_err, _productIds, context) => {
+      // Complete rollback on unexpected error during the mutation process
+      if (context?.previousLists) {
+        context.previousLists.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+      console.error('Bulk delete error:', _err);
+    },
+    onSuccess: (data, productIds, context) => {
+      // Handle partial failures by rolling back failed products
+      if (data.errors.length > 0 && context?.productsToDelete) {
+        const failedProductIds = data.errors.map(e => e.productId);
+        const failedProducts = context.productsToDelete.filter(p => 
+          failedProductIds.includes(p.id)
+        );
+        
+        // Re-add failed products back to the cache
+        queryClient
+          .getQueryCache()
+          .findAll(queryKeys.products.lists())
+          .forEach((query) => {
+            const currentData = query.state.data;
+            if (currentData && Array.isArray(currentData.products)) {
+              queryClient.setQueryData(query.queryKey, {
+                ...currentData,
+                products: [...currentData.products, ...failedProducts],
+                totalProducts: (currentData.totalProducts || 0) + failedProducts.length,
+              });
+            }
+          });
+      }
+      
       // Invalidate product lists to refetch from server and sync any changes
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
     },

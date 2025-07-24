@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { productCreateSchema } from "@/lib/zod-schemas";
+import { productCreateSchema, productUpdateSchema } from "@/lib/zod-schemas";
 import { updateProduct } from "@/lib/data/products";
 import prisma from "@/lib/prisma";
 
@@ -78,7 +78,7 @@ export async function PUT(request, { params }) {
     }
 
     const requestBody = await request.json();
-    const validatedData = productCreateSchema.parse(requestBody);
+const validatedData = productUpdateSchema.parse(requestBody);
 
     const updatedProduct = await updateProduct(id, validatedData, shop.id);
 

@@ -99,19 +99,29 @@ export async function createProduct(productData, shopId) {
  * @returns {Promise<import('@prisma/client').Product>} The updated product.
  */
 export async function updateProduct(productId, productData, shopId) {
-  // Normalize the product name before updating
-  const normalizedProductData = {
-    ...productData,
-    name: normalizeProductName(productData.name),
-  };
+  // Build update data selectively, only normalizing name when it's provided
+  const updateData = { ...productData };
+
+  if (Object.prototype.hasOwnProperty.call(productData, "name")) {
+    // If name is explicitly provided in the update payload, normalize it
+    updateData.name = normalizeProductName(productData.name);
+  }
+
+  // Remove keys with value === undefined to avoid accidentally overwriting
+  Object.keys(updateData).forEach((key) => {
+    if (updateData[key] === undefined) {
+      delete updateData[key];
+    }
+  });
 
   const product = await prisma.product.update({
     where: {
       id: productId,
-      shopId: shopId, // Ensure the product belongs to the shop
+      shopId, // Ensure the product belongs to the shop
     },
-    data: normalizedProductData,
+    data: updateData,
   });
+
   return product;
 }
 

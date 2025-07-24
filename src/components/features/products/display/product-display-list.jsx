@@ -18,7 +18,8 @@ import { AlertCircle } from "lucide-react";
  * 1. Selects and configures the appropriate pagination strategy (cursor vs offset)
  * 2. Manages error boundaries and error display
  * 3. Orchestrates data fetching based on the selected strategy
- * 4. Delegates all rendering concerns to ProductTableContainer
+ * 4. Manages row selection state locally
+ * 5. Delegates all rendering concerns to ProductTableContainer
  *
  * This component acts as the strategic layer, making decisions about HOW to fetch
  * and paginate data, while ProductTableContainer handles the presentation layer.
@@ -72,6 +73,9 @@ export default function ProductDisplayList({
     validatePage,
     isFiltered,
   } = paginationHook(paginationConfig);
+
+  // ROW SELECTION STATE: Manage row selection state locally
+  const [rowSelection, setRowSelection] = React.useState({});
 
   // DATA FETCHING: Select appropriate data hook based on pagination strategy
   const dataHook = useCursorPagination ? useGetProductsCursor : useGetProducts;
@@ -133,13 +137,17 @@ export default function ProductDisplayList({
   return (
     <ProductTableContainer
       products={products}
-      tableState={tableState}
+      tableState={{
+        ...tableState,
+        rowSelection,
+      }}
       handleStateChange={{
         onPaginationChange: useCursorPagination
           ? undefined
           : handlePaginationChange,
         onSortingChange: handleSortingChange,
         onColumnFiltersChange: handleColumnFiltersChange,
+        onRowSelectionChange: setRowSelection,
       }}
       paginationMetadata={paginationMetadata}
       useCursorPagination={useCursorPagination}

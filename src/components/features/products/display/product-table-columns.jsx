@@ -3,6 +3,7 @@
 import * as React from "react";
 import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,6 +113,42 @@ function ProductActionsCell({ product }) {
  * @returns {Array} Array of column definitions for TanStack Table
  */
 export const productColumns = [
+  {
+    id: "select",
+    header: ({ table }) => {
+      const isAllSelected = table.getIsAllPageRowsSelected();
+      const isIndeterminate = table.getIsSomePageRowsSelected() && !isAllSelected;
+      
+      return (
+        <Checkbox
+          checked={isAllSelected}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="translate-y-[2px]"
+          ref={(el) => {
+            if (el) el.indeterminate = isIndeterminate;
+          }}
+        />
+      );
+    },
+    cell: ({ row }) => {
+      // Skip checkboxes for skeleton rows during loading
+      if (row.original.isLoading) {
+        return <div className="h-4 w-4" />;
+      }
+      
+      return (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+          className="translate-y-[2px]"
+        />
+      );
+    },
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: "name",
     header: ({ column }) => (

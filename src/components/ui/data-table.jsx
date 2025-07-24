@@ -28,8 +28,8 @@ import { cn } from "@/lib/utils";
  * @param {Object} props
  * @param {Array} props.columns - Column definitions
  * @param {Array} props.data - Table data
- * @param {Object} [props.state] - External table state
- * @param {Function} [props.onStateChange] - State change handler
+ * @param {Object} [props.state] - External table state (sorting, columnFilters, pagination, rowSelection, columnVisibility)
+ * @param {Function} [props.onStateChange] - State change handler object with callbacks for each state type
  * @param {boolean} [props.manualPagination] - Whether pagination is handled manually
  * @param {boolean} [props.manualSorting] - Whether sorting is handled manually
  * @param {boolean} [props.manualFiltering] - Whether filtering is handled manually
@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
  * @param {boolean} [props.useCursorPagination] - Whether to use cursor-based pagination instead of offset
  * @param {boolean} [props.showToolbar] - Whether to show the toolbar
  * @param {boolean} [props.isLoading] - Loading state for selective skeleton rendering
+ * @param {React.ComponentType} [props.bulkActionsComponent] - Component to render when rows are selected
  * @param {string} [props.className] - Additional CSS classes
  */
 export function DataTable({
@@ -59,6 +60,7 @@ export function DataTable({
   useCursorPagination = false,
   showToolbar = false,
   isLoading = false,
+  bulkActionsComponent,
   className,
   ...props
 }) {
@@ -96,8 +98,8 @@ export function DataTable({
     columns,
     pageCount: manualPagination ? pageCount : undefined,
     state: mergedState,
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
+enableRowSelection: true,
+    onRowSelectionChange: onStateChange?.onRowSelectionChange || setRowSelection,
     onSortingChange: onStateChange?.onSortingChange || setSorting,
     onColumnFiltersChange:
       onStateChange?.onColumnFiltersChange || setColumnFilters,
@@ -115,7 +117,7 @@ export function DataTable({
 
   return (
     <div className={cn("space-y-4", className)} {...props}>
-      {showToolbar && <DataTableToolbar table={table} />}
+      {showToolbar && <DataTableToolbar table={table} bulkActionsComponent={bulkActionsComponent} />}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
