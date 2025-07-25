@@ -12,15 +12,7 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectContent, 
-  SelectItem, 
-  SelectValue
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { useGetCategories } from "@/hooks/use-category-queries";
+import CategorySection from "@/components/features/categories/category-section";
 import { useUpdateProduct } from "@/hooks/use-product-queries";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -45,7 +37,6 @@ export function BulkUpdateCategoryDialog({
   const [isUpdating, setIsUpdating] = React.useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = React.useState("");
   
-  const { data: categories = [], isLoading: categoriesLoading } = useGetCategories();
   const { mutateAsync: updateProductAsync } = useUpdateProduct();
 
   const selectedCount = selectedProducts.length;
@@ -88,9 +79,8 @@ export function BulkUpdateCategoryDialog({
       // Dismiss loading toast
       toast.dismiss(toastId);
 
-      // Find selected category name for success message
-      const selectedCategory = categories.find(cat => cat.id === selectedCategoryId);
-      const categoryName = selectedCategory?.name || "selected category";
+      // For success message, we can use a generic name since we don't have direct access to category data
+      const categoryName = "selected category";
 
       // Show results
       if (successCount === selectedCount) {
@@ -135,7 +125,7 @@ export function BulkUpdateCategoryDialog({
       // Reset selected category for next use
       setSelectedCategoryId("");
     }
-  }, [selectedCategoryId, selectedCount, selectedProducts, updateProductAsync, onOpenChange, onSuccess, categories]);
+  }, [selectedCategoryId, selectedCount, selectedProducts, updateProductAsync, onOpenChange, onSuccess]);
 
   // Reset selected category when dialog closes
   React.useEffect(() => {
@@ -163,42 +153,20 @@ export function BulkUpdateCategoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="category-select">Target Category</Label>
-            <Select 
-              value={selectedCategoryId} 
-              onValueChange={setSelectedCategoryId}
-              disabled={categoriesLoading || isUpdating}
-            >
-              <SelectTrigger id="category-select">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categoriesLoading ? (
-                  <SelectItem value="loading" disabled>
-                    Loading categories...
-                  </SelectItem>
-                ) : categories.length === 0 ? (
-                  <SelectItem value="empty" disabled>
-                    No categories available
-                  </SelectItem>
-                ) : (
-                  categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="py-4">
+          <CategorySection
+            selectedCategoryId={selectedCategoryId}
+            onCategorySelect={setSelectedCategoryId}
+            title="Target Category"
+            showCreateForm={true}
+            showTitle={true}
+          />
         </div>
         
         <DialogFooter className="flex flex-row justify-end gap-2 sm:justify-end">
@@ -214,7 +182,6 @@ export function BulkUpdateCategoryDialog({
             disabled={
               isUpdating || 
               !selectedCategoryId || 
-              categoriesLoading || 
               selectedCount === 0
             }
             className={cn(

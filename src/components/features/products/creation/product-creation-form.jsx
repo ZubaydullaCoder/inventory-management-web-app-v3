@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import ProductNameField from "./product-name-field";
 import NumberField from "../number-field";
 import UnitSelectField from "../unit-select-field";
@@ -12,6 +13,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { HiddenField } from "@/components/ui/hidden-field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useProductCreationForm } from "@/hooks/use-product-creation-form";
@@ -38,23 +40,19 @@ export default function ProductCreationForm() {
   const selectedCategoryId = watch("categoryId");
 
   // Handle category selection from the CategoryManagementCard
-  const handleCategorySelect = (categoryId) => {
+  const handleCategorySelect = useCallback((categoryId) => {
     form.setValue("categoryId", categoryId, {
       shouldValidate: false, // Don't trigger validation
       shouldDirty: true, // Mark as dirty for unsaved changes detection
       shouldTouch: false, // Don't mark as touched to avoid validation triggers
     });
-  };
+  }, [form]);
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Hidden categoryId field for form integration */}
-        <FormField
-          control={control}
-          name="categoryId"
-          render={({ field }) => <input type="hidden" {...field} />}
-        />
+        <HiddenField control={control} name="categoryId" />
         <ProductNameField
           control={control}
           nameInputRef={nameInputRef}
@@ -113,8 +111,6 @@ export default function ProductCreationForm() {
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={handleCategorySelect}
           title="Category"
-          showCreateForm={true}
-          showTitle={true}
         />
 
         <FormField

@@ -194,13 +194,23 @@ export function useSimpleCategoryPagination({
     refetch,
   } = useInfiniteQuery({
     queryKey: [...queryKeys.categories.paginated(normalizedSearch, pageSize), currentCursor, direction],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam?.cursor || currentCursor;
+      const queryDirection = pageParam?.direction || direction;
+      
       return getCategoriesPaginatedApi({
-        cursor: currentCursor,
-        direction,
+        cursor,
+        direction: queryDirection,
         limit: pageSize,
         search: normalizedSearch,
       });
+    },
+    initialPageParam: { cursor: currentCursor, direction },
+    getNextPageParam: (lastPage) => {
+      return lastPage?.hasNextPage ? { cursor: lastPage.nextCursor, direction: "forward" } : undefined;
+    },
+    getPreviousPageParam: (firstPage) => {
+      return firstPage?.hasPrevPage ? { cursor: firstPage.prevCursor, direction: "backward" } : undefined;
     },
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes

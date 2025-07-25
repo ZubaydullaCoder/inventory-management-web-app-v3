@@ -14,6 +14,8 @@ import CategoryList from "./category-list";
  * @param {string} [props.title] - Section title
  * @param {boolean} [props.showCreateForm] - Whether to show the create form
  * @param {boolean} [props.showTitle] - Whether to show the title
+ * @param {boolean} [props.usePagination=true] - Whether to use pagination (recommended for scalability)
+ * @param {number} [props.pageSize=10] - Number of categories per page when pagination is enabled
  */
 export default function CategorySection({
   selectedCategoryId,
@@ -21,7 +23,7 @@ export default function CategorySection({
   title = "Categories",
   showCreateForm = true,
   showTitle = true,
-  usePagination = false,
+  usePagination = true,
   pageSize = 10,
 }) {
   const [searchQuery, setSearchQuery] = useState("");

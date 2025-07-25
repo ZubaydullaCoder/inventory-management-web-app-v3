@@ -163,9 +163,22 @@ export default function CategoryCreateEditModal({
       setOpen(false);
       reset({ name: "" });
 
+      // Create optimistic category data for immediate selection (same pattern as product creation)
+      const optimisticId = `optimistic-${Date.now()}`;
+      const optimisticCategory = {
+        id: optimisticId,
+        name: normalizedName,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Immediately call onSuccess with optimistic data for instant feedback
+      onSuccess?.(optimisticCategory);
+
       createCategory(processedData, {
         onSuccess: (newCategory) => {
           toast.success("Category created successfully!");
+          // Update selection with real category data
           onSuccess?.(newCategory);
         },
         onError: (error) => {

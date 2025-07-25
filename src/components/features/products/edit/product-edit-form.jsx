@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import {
   Form,
   FormField,
@@ -8,13 +9,14 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { HiddenField } from "@/components/ui/hidden-field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import ProductNameField from "../creation/product-name-field";
 import NumberField from "../number-field";
 import UnitSelectField from "../unit-select-field";
-import { CategoryManagementCard } from "@/components/features/categories";
+import { CategorySection } from "@/components/features/categories";
 
 export default function ProductEditForm({
   form,
@@ -32,20 +34,20 @@ export default function ProductEditForm({
   // Watch the categoryId to display selected category
   const selectedCategoryId = form.watch("categoryId");
 
-  // Handle category selection from the CategoryManagementCard
-  const handleCategorySelect = (categoryId) => {
-    form.setValue("categoryId", categoryId);
-  };
+  // Handle category selection from CategorySection
+  const handleCategorySelect = useCallback((categoryId) => {
+    form.setValue("categoryId", categoryId, {
+      shouldValidate: false, // Don't trigger validation
+      shouldDirty: true, // Mark as dirty for unsaved changes detection
+      shouldTouch: false, // Don't mark as touched to avoid validation triggers
+    });
+  }, [form]);
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Hidden categoryId field for form integration */}
-        <FormField
-          control={control}
-          name="categoryId"
-          render={({ field }) => <input type="hidden" {...field} />}
-        />
+        <HiddenField control={control} name="categoryId" />
         <ProductNameField
           control={control}
           nameInputRef={null}
@@ -99,12 +101,11 @@ export default function ProductEditForm({
           label="Unit of Measure"
         />
 
-        {/* Category Management Card */}
-        <CategoryManagementCard
+        {/* Category Section */}
+        <CategorySection
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={handleCategorySelect}
-          title="Select Category"
-          showCreateForm={true}
+          title="Category"
         />
 
         <FormField

@@ -4,9 +4,14 @@ import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import CategoryItem from "./category-item";
-import { useGetCategories } from "@/hooks/use-category-queries";
+import SelectedCategoryBar from "./selected-category-bar";
+import {
+  useGetCategories,
+  useGetCategoryById,
+} from "@/hooks/use-category-queries";
 import { useSimpleCategoryPagination } from "@/hooks/use-category-pagination";
 import { normalizeCategoryName } from "@/lib/utils";
+import { sortCategoriesWithSelectedFirst } from "@/lib/category-utils";
 
 /**
  * List component for displaying paginated categories with search filtering
@@ -31,7 +36,15 @@ export default function CategoryList({
   });
 
   const fallbackResult = useGetCategories();
-  
+
+  // Fetch selected category separately to ensure it's always available
+  const { data: selectedCategoryData } = useGetCategoryById(
+    selectedCategoryId,
+    {
+      enabled: !!selectedCategoryId,
+    }
+  );
+
   // Choose which data source to use
   const {
     categories: paginatedCategories,
@@ -50,7 +63,7 @@ export default function CategoryList({
   // Fallback to non-paginated when pagination is disabled
   const fallbackCategories = useMemo(() => {
     if (usePagination || !fallbackResult.data) return [];
-    
+
     if (!searchQuery.trim()) {
       return fallbackResult.data;
     }
@@ -62,16 +75,46 @@ export default function CategoryList({
   }, [fallbackResult.data, searchQuery, usePagination]);
 
   // Use appropriate data source
-  const categories = usePagination ? paginatedCategories : fallbackCategories.slice(0, pageSize);
-  const isLoading = usePagination ? isPaginationLoading : fallbackResult.isLoading;
+  const rawCategories = usePagination
+    ? paginatedCategories
+    : fallbackCategories.slice(0, pageSize);
+  const isLoading = usePagination
+    ? isPaginationLoading
+    : fallbackResult.isLoading;
   const error = usePagination ? paginationError : fallbackResult.error;
-  const isEmpty = usePagination ? isPaginationEmpty : categories.length === 0;
-  const hasMore = usePagination ? hasNextPage : fallbackCategories.length > pageSize;
+  const isEmpty = usePagination
+    ? isPaginationEmpty
+    : rawCategories.length === 0;
+  const hasMore = usePagination
+    ? hasNextPage
+    : fallbackCategories.length > pageSize;
+
+  // Sort categories with selected first for enhanced UX
+  // Always use separately fetched selected category to ensure persistence across pagination
+  const { selectedCategory, otherCategories, hasSelected } = useMemo(() => {
+    // If we have selectedCategoryData, use it as the selected category
+    // This ensures the selected category persists even when not in current page
+    if (selectedCategoryData) {
+      const otherCats = rawCategories.filter(
+        (cat) => cat.id !== selectedCategoryId
+      );
+      return {
+        selectedCategory: selectedCategoryData,
+        otherCategories: otherCats,
+        hasSelected: true,
+      };
+    }
+
+    // Fallback to the existing logic if no selectedCategoryData
+    return sortCategoriesWithSelectedFirst(rawCategories, selectedCategoryId);
+  }, [rawCategories, selectedCategoryId, selectedCategoryData]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-muted-foreground">Loading categories...</div>
+        <div className="text-sm text-muted-foreground">
+          Loading categories...
+        </div>
       </div>
     );
   }
@@ -86,7 +129,7 @@ export default function CategoryList({
     );
   }
 
-  if (categories.length === 0) {
+  if (rawCategories.length === 0 && !selectedCategoryData) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <div className="text-sm text-muted-foreground mb-2">
@@ -113,10 +156,44 @@ export default function CategoryList({
   }
 
   return (
-    <div className="space-y-2">
-      <div className="h-[300px] w-full overflow-y-auto">
+    <div>
+      {hasSelected && (
+        <div className="relative py-2">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-muted-foreground/20" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-background px-2 text-muted-foreground">
+              Selected Category
+            </span>
+          </div>
+        </div>
+      )}
+      {/* Selected Category Bar - Fixed at top */}
+      <SelectedCategoryBar
+        selectedCategory={selectedCategory}
+        selectedCategoryId={selectedCategoryId}
+        onCategorySelect={onCategorySelect}
+      />
+
+      {/* Separator between selected and other categories */}
+
+      <div className="relative py-2 mb-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-muted-foreground/20" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-2 text-muted-foreground">
+            {hasSelected ? "Other Categories" : "Categories"}
+          </span>
+        </div>
+      </div>
+
+      {/* Scrollable list of other categories */}
+      <div className="h-[350px] w-full overflow-y-auto">
         <div className="space-y-2 pr-4">
-          {categories.map((category) => (
+          {/* Other Categories */}
+          {otherCategories.map((category) => (
             <CategoryItem
               key={category.id}
               category={category}
@@ -140,11 +217,11 @@ export default function CategoryList({
             <ChevronLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
-          
+
           <span className="text-xs text-muted-foreground">
             Page {currentPageNumber}
           </span>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -177,12 +254,13 @@ export default function CategoryList({
       <div className="text-xs text-muted-foreground text-center">
         {usePagination ? (
           <>
-            Showing {categories.length} of {totalCategories} categories
+            Showing {rawCategories.length} of {totalCategories} categories
             {searchQuery && ` matching "${searchQuery}"`}
           </>
         ) : (
           <>
-            Showing {categories.length} of {fallbackCategories.length} categories
+            Showing {rawCategories.length} of {fallbackCategories.length}{" "}
+            categories
             {searchQuery && ` matching "${searchQuery}"`}
           </>
         )}

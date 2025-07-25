@@ -31,6 +31,29 @@ export function useGetCategories() {
 }
 
 /**
+ * Hook to fetch a single category by ID.
+ * @param {string} categoryId - The category ID to fetch
+ * @param {Object} [options] - Additional options
+ * @param {boolean} [options.enabled=true] - Whether the query should be enabled
+ * @returns {Object} TanStack Query result object.
+ */
+export function useGetCategoryById(categoryId, { enabled = true } = {}) {
+  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: queryKeys.categories.detail(categoryId),
+    queryFn: async () => {
+      // For now, we'll get it from the categories list since we don't have a specific API endpoint
+      const categories = await getCategoriesApi();
+      return categories.find((cat) => cat.id === categoryId) || null;
+    },
+    enabled: enabled && Boolean(categoryId),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
  * Hook to check if a category name already exists.
  * @param {string} name - The category name to check.
  * @param {{ enabled?: boolean, excludeId?: string, staleTime?: number }} options
@@ -116,6 +139,11 @@ export function useCreateCategory() {
         );
       });
 
+      // Invalidate all category-related queries so paginated lists refetch
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all(),
+      });
+
       // Invalidate name check for this name
       if (context?.normalizedName) {
         queryClient.invalidateQueries({
@@ -173,8 +201,10 @@ export function useUpdateCategory() {
       }
     },
     onSuccess: (_data, variables, context) => {
-      // Invalidate category lists to refetch from server
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.lists() });
+      // Invalidate all category-related queries so paginated lists refetch
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all(),
+      });
 
       // Invalidate name check for this name
       if (context?.normalizedName) {
@@ -242,8 +272,10 @@ export function useDeleteCategory() {
       }
     },
     onSuccess: () => {
-      // Invalidate category lists to refetch from server
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.lists() });
+      // Invalidate all category-related queries to ensure deleted category disappears from all views
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all(),
+      });
       toast.success("Category deleted successfully!");
     },
   });
