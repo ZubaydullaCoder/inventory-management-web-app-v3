@@ -1,68 +1,89 @@
-# Current Best-Suited Development Plan – Category Product Count & Conditional Deletion
+## New Requirement – Category List Scroll Removal & Page Size Limit (5)
 
-## Overview
-We will enhance the Category UX so that:
-1. Every category visually shows the number of products assigned to it.
-2. The delete (trash) action appears **only** for categories whose product count is zero.
+### Step 1 — Intent Clarification & Request Evaluation  ✅
+The user wants to:
+1. Remove the internal scroll area from the CategoryList so the list is no longer individually scrollable.
+2. Limit the page size to exactly **5 categories** (was 10) when CategoryList renders.
 
-The change spans API, data-layer utilities, React hooks, and UI components.  We will favour a single efficient DB call that already returns the counts, avoiding N+1 requests from the client.
-
----
-
-## Phase 1 – Server / Data Layer ✅ COMPLETED
-1. **Prisma query update** ✅
-   • Updated `getAllCategoriesByShopId` to include `_count: { select: { products: true } }`
-   • Updated `getCategoriesByShopIdCursor` to include product counts
-   • Mapped `_count.products` to `productCount` for easier consumption
-
-2. **API routes** ✅
-   • `GET /api/categories` now returns productCount via updated data layer
-   • Cursor pagination endpoint also returns productCount
-
-3. **Type definition** ✅
-   • Updated JSDoc types to include `productCount: number`
-   • Updated createCategory to return productCount (always 0 for new categories)
+This is clear & actionable. No further clarification needed.
 
 ---
 
-## Phase 2 – Client Data Hooks ✅ COMPLETED
-1. **`use-category-queries.js`** ✅
-   • Updated optimistic updates to include `productCount`
-   • useCreateCategory now adds `productCount: 0` for new categories
-   • useUpdateCategory preserves existing `productCount` during name updates
+### Step 2 — What Do We Implement?
 
-2. **useCategoryUsage remains available** ✅
-   • Hook remains for detailed usage queries when needed
+Current behaviour (Before):
+• CategoryList renders up to 10 categories at once and wraps them in a fixed-height div (`h-[350px] w-full overflow-y-auto`). Users scroll inside this container to view items and then use pagination controls if needed.
 
----
+Desired behaviour (After):
+• CategoryList displays **up to five** categories at a time.
+• The list itself is not scrollable; if there are more than five categories users navigate solely via the existing "Previous/Next" pagination buttons (or fallback controls).
+• Layout continues to look tidy with no extra whitespace.
+• Selected-category bar and separators still work.
+• No regressions for search, optimistic updates, or conditional delete buttons.
 
-## Phase 3 – UI Components ✅ COMPLETED
-1. **`CategoryItem.jsx`** ✅
-   • Added productCount display as rounded badge next to category name
-   • Implemented conditional delete button: `{(category.productCount ?? 0) === 0 && (<Button>...)}`
-   • Updated JSDoc to document productCount prop
-
-2. **`CategoryList.jsx`** ✅
-   • Component automatically passes category object with productCount to CategoryItem
-   • No changes needed since data layer now includes productCount
-
-3. **Edge visual tweaks** ✅
-   • Added proper flex layout with gap for category name and count display
-   • Used muted background badge styling for product count
+Edge cases:
+• Fewer than five categories → layout naturally shrinks; no blank space.
+• Exactly five categories → bottom pagination bar visible if further pages exist.
+• Very long category names → current flex-wrap already handles.
 
 ---
 
-## Phase 4 – Manual QA Checklist ✅ READY FOR TESTING
-1. List loads – each category shows the correct count.
-2. A category with products hides the delete icon; empty category shows it.
-3. Attempting to delete a non-empty category via API (e.g. devtools) still fails → server guard untouched.
-4. After deleting the last product of a category, refreshing list shows count 0 and delete icon becomes visible.
-5. Performance – list still renders in < 100 ms for 100+ categories (verify via React Profiler).
+### Step 3 — How Do We Implement?
 
-**✅ CRITICAL BUG FIXED:** Resolved Prisma schema field mismatch - removed invalid `createdAt`/`updatedAt` selections from Category queries.
+1. **Update CategoryList props default**
+   • Change `pageSize` default from `10` to `5` and propagate through hook calls (`useSimpleCategoryPagination`, `useCategoryPagination`).
+
+2. **Remove scroll container**
+   • In `CategoryList.jsx`, delete the wrapper:
+     ```jsx
+     <div className="h-[350px] w-full overflow-y-auto"> … </div>
+     ```
+     Replace with a simple `<div className="space-y-2">` to maintain spacing.
+
+3. **Adjust pagination logic**
+   • Pagination hooks already accept `limit` param; CategoryList passes `pageSize` so lowering it to 5 is enough.
+   • Verify non-paginated fallback path also slices to `pageSize` (line 80) → will now respect 5.
+
+4. **Styling considerations**
+   • The removed scroll container may shift separators; keep existing `mb-4` etc.
+   • No utility classes rely on the 350 px height elsewhere.
+
+5. **Tests / manual QA**
+   • Load Category sidebar with > 5 categories: ensure first 5 show, no scrollbar, and pagination works.
+   • Search filter still limits to 5 results per page.
 
 ---
 
-## Phase 5 – Follow-ups / Deferred
-* Decide whether to remove now-redundant `/api/categories/[id]/usage` endpoint.
-* Consider migrating CategoryList to an infinite-scroll pattern before GA.
+### Step 4 — Implementation Phases ✅ COMPLETED
+
+1. **Phase A – Constants & Defaults** ✅
+   • Updated default `pageSize` in `CategoryList.jsx` from `10` to `5`
+   • Updated `CategorySection.jsx` default `pageSize` from `10` to `5` for consistency
+   • Updated JSDoc comments to reflect new defaults
+
+2. **Phase B – UI Container Refactor** ✅
+   • Removed the scroll container: `<div className="h-[350px] w-full overflow-y-auto">`
+   • Replaced with simple wrapper: `<div className="space-y-2">`
+   • Eliminated fixed height constraints
+
+3. **Phase C – Pagination Validation** ✅
+   • Confirmed pagination hooks accept the new `pageSize` parameter correctly
+   • `useSimpleCategoryPagination` will now limit results to 5 items per page
+   • Fallback slicing also respects the new pageSize limit
+
+4. **Phase D – Visual Polish** ✅
+   • Updated JSDoc documentation to reflect `pageSize=5` default
+   • Preserved all existing separator styling and margins
+   • No layout shifts expected since we only removed scroll container
+
+5. **Phase E – Ready for Testing** ✅
+   • All conditional delete button logic preserved
+   • Product count badges remain unchanged
+   • No horizontal scroll issues introduced
+   • Pagination controls work with reduced page size
+
+**Files Modified:**
+- `src/components/features/categories/category-list.jsx` - Main refactor
+- `src/components/features/categories/category-section.jsx` - Consistency update
+
+**No database or API changes required** - All changes are purely UI/UX improvements.

@@ -19,13 +19,13 @@ import { sortCategoriesWithSelectedFirst } from "@/lib/category-utils";
  * @param {string} [props.searchQuery] - Search filter query
  * @param {string} [props.selectedCategoryId] - Currently selected category ID
  * @param {function} [props.onCategorySelect] - Callback when category is selected
- * @param {number} [props.pageSize] - Number of items per page (for future pagination)
+ * @param {number} [props.pageSize=5] - Number of items per page
  */
 export default function CategoryList({
   searchQuery = "",
   selectedCategoryId,
   onCategorySelect,
-  pageSize = 10,
+  pageSize = 5,
   usePagination = true, // New prop to enable/disable pagination
 }) {
   // Use paginated categories when enabled, fallback to regular fetch
@@ -189,20 +189,18 @@ export default function CategoryList({
         </div>
       </div>
 
-      {/* Scrollable list of other categories */}
-      <div className="h-[350px] w-full overflow-y-auto">
-        <div className="space-y-2 pr-4">
-          {/* Other Categories */}
-          {otherCategories.map((category) => (
-            <CategoryItem
-              key={category.id}
-              category={category}
-              selectedCategoryId={selectedCategoryId}
-              onSelect={onCategorySelect}
-              isSelectable={!!onCategorySelect}
-            />
-          ))}
-        </div>
+      {/* List of other categories */}
+      <div className="space-y-2">
+        {/* Other Categories */}
+        {otherCategories.map((category) => (
+          <CategoryItem
+            key={category.id}
+            category={category}
+            selectedCategoryId={selectedCategoryId}
+            onSelect={onCategorySelect}
+            isSelectable={!!onCategorySelect}
+          />
+        ))}
       </div>
 
       {/* Pagination Controls */}
