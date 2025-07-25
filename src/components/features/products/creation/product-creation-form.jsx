@@ -16,6 +16,7 @@ import {
 import { HiddenField } from "@/components/ui/hidden-field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import FormSectionCard from "@/components/ui/form-section-card";
 import { useProductCreationForm } from "@/hooks/use-product-creation-form";
 
 /**
@@ -53,79 +54,91 @@ export default function ProductCreationForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Hidden categoryId field for form integration */}
         <HiddenField control={control} name="categoryId" />
-        <ProductNameField
-          control={control}
-          nameInputRef={nameInputRef}
-          isCheckingName={isCheckingName}
-          isNameDuplicate={isNameDuplicate}
-          nameCheckError={nameCheckError}
-          showAvailable={showAvailable}
-        />
+        
+        {/* Product Details Section */}
+        <FormSectionCard 
+          title="Product Details" 
+          description="Basic product information and pricing"
+        >
+          <ProductNameField
+            control={control}
+            nameInputRef={nameInputRef}
+            isCheckingName={isCheckingName}
+            isNameDuplicate={isNameDuplicate}
+            nameCheckError={nameCheckError}
+            showAvailable={showAvailable}
+          />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <NumberField
-            control={control}
-            name="sellingPrice"
-            label="Selling Price"
-            placeholder="0"
-            required
-            decimalScale={0}
-            suffix=" so'm"
-          />
-          <NumberField
-            control={control}
-            name="purchasePrice"
-            label="Purchase Price"
-            placeholder="0"
-            required
-            decimalScale={0}
-            suffix=" so'm"
-          />
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <NumberField
+              control={control}
+              name="sellingPrice"
+              label="Selling Price"
+              placeholder="0"
+              required
+              decimalScale={0}
+              suffix=" so'm"
+            />
+            <NumberField
+              control={control}
+              name="purchasePrice"
+              label="Purchase Price"
+              placeholder="0"
+              required
+              decimalScale={0}
+              suffix=" so'm"
+            />
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <NumberField
-            control={control}
-            name="stock"
-            label="Initial Stock"
-            placeholder="0"
-            decimalScale={0}
-          />
-          <NumberField
-            control={control}
-            name="reorderPoint"
-            label="Reorder Point"
-            placeholder="0"
-            decimalScale={0}
-          />
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <NumberField
+              control={control}
+              name="stock"
+              label="Initial Stock"
+              placeholder="0"
+              decimalScale={0}
+            />
+            <NumberField
+              control={control}
+              name="reorderPoint"
+              label="Reorder Point"
+              placeholder="0"
+              decimalScale={0}
+            />
+          </div>
 
-        <UnitSelectField
-          control={control}
-          name="unit"
-          label="Unit of Measure"
-        />
+          <UnitSelectField
+            control={control}
+            name="unit"
+            label="Unit of Measure"
+          />
+        </FormSectionCard>
 
         {/* Category Section */}
-        <CategorySection
-          selectedCategoryId={selectedCategoryId}
-          onCategorySelect={handleCategorySelect}
-          title="Category"
-        />
+        <FormSectionCard title="Category" description="Select or create a product category">
+          <CategorySection
+            selectedCategoryId={selectedCategoryId}
+            onCategorySelect={handleCategorySelect}
+            showTitle={false}
+          />
+        </FormSectionCard>
 
-        <FormField
-          control={control}
-          name="supplierId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Supplier</FormLabel>
-              <FormControl>
-                <Input placeholder="Optional" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Supplier Section */}
+        <FormSectionCard title="Supplier" description="Optional supplier information">
+          <FormField
+            control={control}
+            name="supplierId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Supplier</FormLabel>
+                <FormControl>
+                  <Input placeholder="Optional" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </FormSectionCard>
 
         <div className="pt-4">
           <Button type="submit" className="w-full" disabled={isSubmitDisabled}>

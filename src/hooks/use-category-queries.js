@@ -184,12 +184,12 @@ export function useUpdateCategory() {
           queryKeys.categories.lists(),
           previousCategories.map((category) =>
             category.id === categoryId
-              ? { 
-                  ...category, 
-                  ...categoryData, 
+              ? {
+                  ...category,
+                  ...categoryData,
                   name: normalizedName,
                   // Preserve productCount since updates don't change product assignments
-                  productCount: category.productCount ?? 0
+                  productCount: category.productCount ?? 0,
                 }
               : category
           )

@@ -27,12 +27,12 @@ export default function ProductCreationCockpit() {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[600px]">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(500px,1fr)_1fr] gap-8 min-h-[600px]">
       {/* Left Column: Product Form with integrated category management */}
       <div className="space-y-4">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">
-            Product Details
+        <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+          <h2 className="text-xl font-semibold text-foreground">
+            Product Creation
           </h2>
           <ProductCreationForm />
         </div>

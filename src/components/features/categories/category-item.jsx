@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit, Trash2, Check } from "lucide-react";
+import { Edit, Trash2, Check, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import CategoryCreateEditModal from "./category-create-edit-modal";
@@ -121,6 +121,10 @@ export default function CategoryItem({
       <div className="flex items-center gap-2 flex-1">
         {isSelected && <Check className="w-4 h-4 text-primary" />}
         <div className="flex items-center gap-2">
+          <FolderOpen className={cn(
+            "w-4 h-4 text-muted-foreground",
+            isSelected && "text-primary"
+          )} />
           <span
             className={cn("text-sm font-medium", isSelected && "text-primary")}
           >
