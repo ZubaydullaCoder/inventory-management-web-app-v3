@@ -113,6 +113,7 @@ export function useCreateCategory() {
             ...newCategory,
             id: `optimistic-${Date.now()}`,
             name: normalizedName,
+            productCount: 0, // New categories always start with 0 products
           },
           ...previousCategories,
         ]);
@@ -183,7 +184,13 @@ export function useUpdateCategory() {
           queryKeys.categories.lists(),
           previousCategories.map((category) =>
             category.id === categoryId
-              ? { ...category, ...categoryData, name: normalizedName }
+              ? { 
+                  ...category, 
+                  ...categoryData, 
+                  name: normalizedName,
+                  // Preserve productCount since updates don't change product assignments
+                  productCount: category.productCount ?? 0
+                }
               : category
           )
         );

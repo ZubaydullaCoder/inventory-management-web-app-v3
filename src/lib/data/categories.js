@@ -49,7 +49,7 @@ export async function isCategoryNameTaken(
  * Creates a new category for a specific shop.
  * @param {z.infer<CategoryCreateInput>} categoryData - The validated category data.
  * @param {string} shopId - The ID of the shop this category belongs to.
- * @returns {Promise<import('@prisma/client').Category>} The newly created category.
+ * @returns {Promise<import('@prisma/client').Category & {productCount: number}>} The newly created category with product count.
  */
 export async function createCategory(categoryData, shopId) {
   // Normalize the category name before creating
@@ -64,7 +64,12 @@ export async function createCategory(categoryData, shopId) {
       shopId: shopId,
     },
   });
-  return category;
+  
+  // Add productCount to the newly created category (always 0 for new categories)
+  return {
+    ...category,
+    productCount: 0,
+  };
 }
 
 /**
@@ -133,15 +138,30 @@ export async function getCategoriesByShopId(shopId, { page = 1, limit = 100 }) {
 /**
  * Fetches all categories for a specific shop (for dropdowns/selects).
  * @param {string} shopId - The ID of the shop whose categories to fetch.
- * @returns {Promise<Array<import('@prisma/client').Category>>} The array of all categories.
+ * @returns {Promise<Array<import('@prisma/client').Category & {productCount: number}>>} The array of all categories with product counts.
  */
 export async function getAllCategoriesByShopId(shopId) {
   const categories = await prisma.category.findMany({
     where: { shopId },
     orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      shopId: true,
+      _count: {
+        select: {
+          products: true,
+        },
+      },
+    },
   });
 
-  return categories;
+  // Map the _count.products to productCount for easier consumption
+  return categories.map((category) => ({
+    ...category,
+    productCount: category._count.products,
+    _count: undefined, // Remove the _count property
+  }));
 }
 
 /**
@@ -209,6 +229,16 @@ export async function getCategoriesByShopIdCursor(
         where: whereClause,
         orderBy,
         take,
+        select: {
+          id: true,
+          name: true,
+          shopId: true,
+          _count: {
+            select: {
+              products: true,
+            },
+          },
+        },
       }),
       // Only count when necessary (expensive operation)
       cursor === null
@@ -236,19 +266,26 @@ export async function getCategoriesByShopIdCursor(
     // Remove the extra item if present
     const finalCategories = orderedCategories.slice(0, limit);
 
+    // Map the _count.products to productCount for easier consumption
+    const categoriesWithProductCount = finalCategories.map((category) => ({
+      ...category,
+      productCount: category._count.products,
+      _count: undefined, // Remove the _count property
+    }));
+
     // Generate cursors for next/previous pages
     const nextCursor =
-      hasNextPage && finalCategories.length > 0
-        ? generateCategoryCursor(finalCategories[finalCategories.length - 1])
+      hasNextPage && categoriesWithProductCount.length > 0
+        ? generateCategoryCursor(categoriesWithProductCount[categoriesWithProductCount.length - 1])
         : null;
 
     const prevCursor =
-      hasPrevPage && finalCategories.length > 0
-        ? generateCategoryCursor(finalCategories[0])
+      hasPrevPage && categoriesWithProductCount.length > 0
+        ? generateCategoryCursor(categoriesWithProductCount[0])
         : null;
 
     return {
-      categories: finalCategories,
+      categories: categoriesWithProductCount,
       nextCursor,
       prevCursor,
       hasNextPage,
