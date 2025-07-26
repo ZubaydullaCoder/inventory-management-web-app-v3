@@ -49,6 +49,7 @@ export default function CategoryCreateEditModal({
   trigger,
 }) {
   const [open, setOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef(null);
 
   const { mutate: createCategory } = useCreateCategory();
@@ -113,11 +114,31 @@ export default function CategoryCreateEditModal({
   }, [open, category, reset]);
 
   const handleOpenChange = (newOpen) => {
-    setOpen(newOpen);
     if (!newOpen) {
+      setIsClosing(true);
+      
+      // Prevent backdrop click from propagating to underlying elements
+      // by stopping event propagation at the document level momentarily
+      if (typeof document !== 'undefined') {
+        const handleDocumentClick = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        };
+        
+        // Add event listener to capture any clicks during modal close
+        document.addEventListener('click', handleDocumentClick, true);
+        
+        // Remove listener after modal close animation completes
+        setTimeout(() => {
+          document.removeEventListener('click', handleDocumentClick, true);
+          setIsClosing(false);
+        }, 100);
+      }
+      
       reset({ name: "" });
       onCancel?.();
     }
+    setOpen(newOpen);
   };
 
   const onSubmit = (values) => {
