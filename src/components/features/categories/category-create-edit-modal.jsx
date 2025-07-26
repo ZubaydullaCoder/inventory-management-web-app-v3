@@ -73,7 +73,8 @@ export default function CategoryCreateEditModal({
 
   // Check for duplicate names (excluding current category if editing)
   const nameDirty = !!formState.dirtyFields?.name;
-  const nameHasChanged = nameDirty && !!debouncedName;
+  const originalNormalizedName = normalizeCategoryName(category?.name || "");
+  const nameHasChanged = nameDirty && debouncedName !== originalNormalizedName && !!debouncedName;
 
   const {
     data: nameCheckResult,
