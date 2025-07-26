@@ -27,6 +27,11 @@ export default function CategoryItem({
 
   const { mutate: deleteCategory } = useDeleteCategory();
 
+  // Guard against undefined category
+  if (!category) {
+    return null;
+  }
+
   const isSelected = selectedCategoryId === category.id;
 
   const handleSelect = () => {

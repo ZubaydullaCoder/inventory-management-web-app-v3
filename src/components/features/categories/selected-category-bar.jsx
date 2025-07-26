@@ -28,6 +28,20 @@ export default function SelectedCategoryBar({
       </div>
     );
   }
+
+  // Show loading state when selectedCategoryId exists but selectedCategory is not loaded yet
+  if (selectedCategoryId && !selectedCategory) {
+    return (
+      <div className="sticky top-0 bg-background p-3">
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 animate-pulse bg-muted rounded" />
+            <span className="text-sm font-medium text-muted-foreground">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
 
   // Handle deselection when clicking on selected category
