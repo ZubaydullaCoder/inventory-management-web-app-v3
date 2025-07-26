@@ -224,7 +224,10 @@ export default function CategoryCreateEditModal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{triggerElement}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle>
             {category ? "Edit Category" : "Create New Category"}
@@ -249,6 +252,7 @@ export default function CategoryCreateEditModal({
                     <Input
                       ref={inputRef}
                       placeholder="Enter category name"
+                      onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => {
                         // Prevent Enter key from bubbling up to parent form
                         if (e.key === "Enter") {
@@ -294,7 +298,10 @@ export default function CategoryCreateEditModal({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                }}
                 className="flex-1"
               >
                 Cancel
