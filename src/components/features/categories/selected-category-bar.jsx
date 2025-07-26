@@ -1,4 +1,6 @@
 import React from "react";
+import { FileQuestion } from "lucide-react";
+import { cn } from "@/lib/utils";
 import CategoryItem from "./category-item";
 
 /**
@@ -13,16 +15,35 @@ export default function SelectedCategoryBar({
   selectedCategoryId,
   onCategorySelect,
 }) {
-  if (!selectedCategory) {
-    return null; // Render nothing if no category is selected
+  // Show "Uncategorized" when no category is selected
+  if (!selectedCategoryId) {
+    return (
+      <div className="sticky top-0 bg-background p-3">
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
+          <div className="flex items-center gap-2">
+            <FileQuestion className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Uncategorized</span>
+          </div>
+        </div>
+      </div>
+    );
   }
+  
+
+  // Handle deselection when clicking on selected category
+  const handleCategoryClick = (categoryId) => {
+    if (categoryId === selectedCategoryId && onCategorySelect) {
+      // If clicking on already selected category, deselect it
+      onCategorySelect("");
+    }
+  };
 
   return (
     <div className="sticky top-0 bg-background p-3">
       <CategoryItem
         category={selectedCategory}
         selectedCategoryId={selectedCategoryId}
-        onSelect={onCategorySelect}
+        onSelect={handleCategoryClick}
         isSelectable={!!onCategorySelect}
       />
     </div>
