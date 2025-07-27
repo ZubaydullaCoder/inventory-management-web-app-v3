@@ -140,6 +140,7 @@ model Category {
   products Product[]
 
   @@index([shopId])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin) // GIN trigram index for fuzzy search
   @@unique([shopId, name]) // Add unique constraint for shop-scoped category names
 }
 

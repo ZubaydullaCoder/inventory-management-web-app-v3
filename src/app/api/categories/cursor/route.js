@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getCategoriesByShopIdCursor } from "@/lib/data/categories";
+import { fuzzySearchCategories } from "@/lib/data/categories-search";
 import prisma from "@/lib/prisma";
 
 /**
@@ -47,12 +48,26 @@ export async function GET(request) {
       );
     }
 
-    const paginatedData = await getCategoriesByShopIdCursor(shop.id, {
-      cursor,
-      direction,
-      limit,
-      search,
-    });
+    let paginatedData;
+
+    if (search) {
+      // Use fuzzy search for categories when search is provided
+      const results = await fuzzySearchCategories(search, shop.id, limit);
+      paginatedData = {
+        categories: results,
+        nextCursor: null,
+        prevCursor: null,
+        hasNextPage: false, // Fuzzy results are full result sets
+        hasPrevPage: false,
+        totalCategories: results.length
+      };
+    } else {
+      paginatedData = await getCategoriesByShopIdCursor(shop.id, {
+        cursor,
+        direction,
+        limit,
+      });
+    }
 
     return NextResponse.json(paginatedData);
   } catch (error) {
