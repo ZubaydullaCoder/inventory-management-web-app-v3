@@ -418,10 +418,23 @@ export async function getProductsByShopIdCursor(
         take,
         select: selectFields,
       }),
-      // Only count when necessary (expensive operation)
-      cursor === null
-        ? prisma.product.count({ where: { shopId } })
-        : Promise.resolve(0),
+      // Always fetch total count to ensure consistent pagination info
+      // Use the same where clause as the main query to get accurate filtered count
+      prisma.product.count({
+        where: {
+          shopId,
+          ...(trimmedNameFilter && {
+            name: {
+              contains: trimmedNameFilter,
+              mode: "insensitive",
+            },
+          }),
+          ...(categoryFilter &&
+            categoryFilter.trim() && {
+              categoryId: categoryFilter.trim(),
+            }),
+        },
+      }),
     ]);
 
     // Handle backward pagination (reverse the results)
@@ -614,7 +627,8 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
 
   // For fuzzy search, we need to get all results first, then apply cursor pagination
   // This is a limitation of complex fuzzy search queries
-  const fuzzyResults = await fuzzySearchProducts(query, shopId, limit * 5); // Get more results
+  // Get significantly more results to ensure we capture the full dataset for accurate total count
+  const fuzzyResults = await fuzzySearchProducts(query, shopId, Math.max(limit * 10, 100)); // Get more results for accurate total count
 
   // Apply category filter if specified
   let filteredResults = fuzzyResults;
