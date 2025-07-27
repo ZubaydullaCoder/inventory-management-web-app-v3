@@ -17,7 +17,8 @@ import { ProductBulkActions } from "../product-bulk-actions";
  * @param {boolean} props.useCursorPagination - Whether to use cursor-based pagination
  * @param {Function} props.handleCursorChange - Handler for cursor changes (cursor pagination only)
  * @param {Function} props.handlePageSizeChange - Handler for page size changes (cursor pagination only)
- * @param {number} props.totalProducts - Total number of products
+ * @param {number} props.totalProducts - Total number of products (unfiltered)
+ * @param {number} [props.filteredCount] - Total number of filtered products
  * @param {boolean} props.isLoading - Loading state
  * @param {number} props.skeletonRowCount - Number of skeleton rows to display when loading
  */
@@ -30,6 +31,7 @@ export default function ProductTableContainer({
   handleCursorChange,
   handlePageSizeChange,
   totalProducts,
+  filteredCount,
   isLoading,
   skeletonRowCount = 10,
 }) {
@@ -93,6 +95,7 @@ export default function ProductTableContainer({
         onCursorChange={useCursorPagination ? handleCursorChange : undefined}
         onPageSizeChange={useCursorPagination ? handlePageSizeChange : undefined}
         totalItems={totalProducts}
+        filteredCount={filteredCount}
         // Common props - remove bulk actions from toolbar
         showToolbar={true}
         bulkActionsComponent={null}

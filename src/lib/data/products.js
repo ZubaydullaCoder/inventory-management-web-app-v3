@@ -140,7 +140,8 @@ export async function updateProduct(productId, productData, shopId) {
  * @property {string|null} prevCursor - Cursor for the previous page, null if first page.
  * @property {boolean} hasNextPage - Whether there are more pages after this one.
  * @property {boolean} hasPrevPage - Whether there are pages before this one.
- * @property {number} totalProducts - The total number of products (for pagination UI).
+ * @property {number} totalProducts - The total number of products in the shop (unfiltered).
+ * @property {number} filteredCount - The total number of products matching current filters.
  */
 
 /**
@@ -411,15 +412,17 @@ export async function getProductsByShopIdCursor(
     const actualDirection =
       direction === "backward" ? reverseOrder(orderBy) : orderBy;
 
-    const [products, totalProducts] = await Promise.all([
+    // Determine if we have active filters
+    const hasFilters = trimmedNameFilter || (categoryFilter && categoryFilter.trim());
+    
+    const [products, filteredCount, totalProducts] = await Promise.all([
       prisma.product.findMany({
         where: whereClause,
         orderBy: actualDirection,
         take,
         select: selectFields,
       }),
-      // Always fetch total count to ensure consistent pagination info
-      // Use the same where clause as the main query to get accurate filtered count
+      // Get filtered count (same as current query filters)
       prisma.product.count({
         where: {
           shopId,
@@ -434,6 +437,10 @@ export async function getProductsByShopIdCursor(
               categoryId: categoryFilter.trim(),
             }),
         },
+      }),
+      // Get total unfiltered count (for "showing X of Y" display)
+      prisma.product.count({
+        where: { shopId }
       }),
     ]);
 
@@ -481,6 +488,7 @@ export async function getProductsByShopIdCursor(
       hasNextPage,
       hasPrevPage,
       totalProducts: totalProducts || 0,
+      filteredCount: filteredCount || 0,
     };
   } catch (error) {
     console.error("Error fetching products with cursor pagination:", error);
@@ -628,7 +636,11 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
   // For fuzzy search, we need to get all results first, then apply cursor pagination
   // This is a limitation of complex fuzzy search queries
   // Get significantly more results to ensure we capture the full dataset for accurate total count
-  const fuzzyResults = await fuzzySearchProducts(query, shopId, Math.max(limit * 10, 100)); // Get more results for accurate total count
+  const [fuzzyResults, totalProducts] = await Promise.all([
+    fuzzySearchProducts(query, shopId, Math.max(limit * 10, 100)), // Get more results for accurate total count
+    // Get total unfiltered count for the shop
+    prisma.product.count({ where: { shopId } })
+  ]);
 
   // Apply category filter if specified
   let filteredResults = fuzzyResults;
@@ -699,6 +711,7 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
     prevCursor,
     hasNextPage,
     hasPrevPage,
-    totalProducts: filteredResults.length,
+    totalProducts: totalProducts || 0, // Total unfiltered count
+    filteredCount: filteredResults.length, // Total filtered count
   };
 }

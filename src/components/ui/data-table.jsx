@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
  * @param {Function} [props.onCursorChange] - Cursor change handler for cursor pagination
  * @param {Function} [props.onPageSizeChange] - Page size change handler for cursor pagination
  * @param {number} [props.totalItems] - Total items count for cursor pagination display
+ * @param {number} [props.filteredCount] - Filtered items count for cursor pagination display
  * @param {boolean} [props.useCursorPagination] - Whether to use cursor-based pagination instead of offset
  * @param {boolean} [props.showToolbar] - Whether to show the toolbar
  * @param {boolean} [props.isLoading] - Loading state for selective skeleton rendering
@@ -57,6 +58,7 @@ export function DataTable({
   onCursorChange,
   onPageSizeChange,
   totalItems = 0,
+  filteredCount,
   useCursorPagination = false,
   showToolbar = false,
   isLoading = false,
@@ -181,6 +183,7 @@ enableRowSelection: true,
           onPageSizeChange={onPageSizeChange}
           totalItems={totalItems}
           currentCount={data.length}
+          filteredCount={filteredCount}
           isLoading={isLoading}
         />
       ) : (

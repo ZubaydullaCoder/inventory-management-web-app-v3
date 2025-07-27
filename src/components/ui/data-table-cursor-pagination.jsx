@@ -25,8 +25,9 @@ import { cn } from "@/lib/utils";
  * @param {number} props.paginationState.currentPageSize - Current page size
  * @param {Function} props.onCursorChange - Callback for cursor navigation
  * @param {Function} props.onPageSizeChange - Callback for page size changes
- * @param {number} props.totalItems - Total number of items (for display)
+ * @param {number} props.totalItems - Total number of items (unfiltered)
  * @param {number} props.currentCount - Current page item count
+ * @param {number} [props.filteredCount] - Total filtered items count (when filters are applied)
  * @param {boolean} [props.isLoading] - Whether data is being loaded
  * @param {number[]} [props.pageSizeOptions] - Available page size options
  * @param {string} [props.className] - Additional CSS classes
@@ -37,6 +38,7 @@ export function DataTableCursorPagination({
   onPageSizeChange,
   totalItems = 0,
   currentCount = 0,
+  filteredCount,
   isLoading = false,
   pageSizeOptions = [10, 20, 30, 40, 50],
   className,
@@ -78,7 +80,9 @@ export function DataTableCursorPagination({
       return `0 of ${totalItems.toLocaleString()} items`;
     }
 
-    return `Showing ${currentCount} of ${totalItems.toLocaleString()} items`;
+    // Use the total unfiltered count for the display (what the user wants)
+    // Show "showing X of Y items" where Y is always the total unfiltered count
+    return `Showing ${currentCount.toLocaleString()} of ${totalItems.toLocaleString()} items`;
   }, [isLoading, totalItems, currentCount]);
 
   return (

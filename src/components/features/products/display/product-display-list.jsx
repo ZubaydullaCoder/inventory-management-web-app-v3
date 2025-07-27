@@ -84,6 +84,7 @@ export default function ProductDisplayList({
   // DATA PREPARATION: Prepare data with fallbacks for rendering
   const products = productsData?.products || (isLoading ? [] : initialData);
   const totalProducts = productsData?.totalProducts || initialData.length;
+  const filteredCount = productsData?.filteredCount;
 
   // METADATA ASSEMBLY: Build pagination metadata based on strategy
   const paginationMetadata = useCursorPagination
@@ -154,6 +155,7 @@ export default function ProductDisplayList({
       handleCursorChange={handleCursorChange}
       handlePageSizeChange={handlePageSizeChange}
       totalProducts={totalProducts}
+      filteredCount={filteredCount}
       isLoading={isLoading}
       skeletonRowCount={
         apiParams.limit || tableState.pagination?.pageSize || 10
