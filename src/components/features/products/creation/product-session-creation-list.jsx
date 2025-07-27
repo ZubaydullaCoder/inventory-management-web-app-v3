@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Package } from "lucide-react";
 import ProductSessionCreationItem from "./product-session-creation-item";
 import ProductEditModal from "../edit/product-edit-modal";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { useDeleteProduct } from "@/hooks/use-product-queries";
+import { toast } from "sonner";
 
 /**
  * Displays a list of products passed via props, with status indicators.
@@ -15,6 +18,10 @@ import ProductEditModal from "../edit/product-edit-modal";
 export default function ProductSessionCreationList({ products = [] }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  
+  // Hook for deleting products
+  const { mutateAsync: deleteProductAsync, isPending: isDeleting } = useDeleteProduct();
 
   /**
    * Handles the edit action for a product.
@@ -45,6 +52,42 @@ export default function ProductSessionCreationList({ products = [] }) {
     // Updates are now handled directly in the mutation hooks
     // via TanStack Query cache updates
   };
+  
+  /**
+   * Handles the delete action for a product.
+   * @param {object} product
+   */
+  const handleDeleteProduct = (product) => {
+    setProductToDelete(product);
+  };
+  
+  /**
+   * Handles the confirmed deletion of a product.
+   */
+  const handleConfirmDelete = () => {
+    if (!productToDelete) return;
+    
+    const deletePromise = deleteProductAsync(productToDelete.id);
+    
+    // Close dialog immediately for better UX
+    setProductToDelete(null);
+    
+    toast.promise(deletePromise, {
+      loading: "Deleting product...",
+      success: "Product deleted successfully!",
+      error: (err) => {
+        console.error("Delete error:", err);
+        return err?.message || "Failed to delete product";
+      },
+    });
+  };
+  
+  /**
+   * Handles closing the delete confirmation dialog.
+   */
+  const handleCloseDeleteDialog = () => {
+    setProductToDelete(null);
+  };
 
   if (products.length === 0) {
     return (
@@ -71,6 +114,7 @@ export default function ProductSessionCreationList({ products = [] }) {
               product={product}
               status={status}
               onEdit={handleEditProduct}
+              onDelete={handleDeleteProduct}
             />
           ))}
         </div>
@@ -90,6 +134,16 @@ export default function ProductSessionCreationList({ products = [] }) {
         onClose={handleCloseEditModal}
         product={editingProduct}
         onSuccess={handleEditSuccess}
+      />
+      
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={!!productToDelete}
+        onOpenChange={handleCloseDeleteDialog}
+        onConfirm={handleConfirmDelete}
+        title="Delete Product"
+        description={productToDelete ? `Are you sure you want to delete "${productToDelete.name}"? This action cannot be undone.` : ""}
+        isPending={isDeleting}
       />
     </>
   );

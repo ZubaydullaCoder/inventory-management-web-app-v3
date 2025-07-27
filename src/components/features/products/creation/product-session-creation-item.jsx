@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, AlertTriangle, Loader2 } from "lucide-react";
+import { Pencil, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NumericFormat } from "react-number-format";
 
@@ -9,6 +9,7 @@ import { NumericFormat } from "react-number-format";
  * @property {object} product - The product data object
  * @property {string} status - The status of the product ("pending" | "error" | "success")
  * @property {Function} onEdit - Handler for edit action
+ * @property {Function} [onDelete] - Handler for delete action
  */
 
 /**
@@ -21,9 +22,14 @@ export default function ProductSessionCreationItem({
   product,
   status,
   onEdit,
+  onDelete,
 }) {
   const canEdit =
     status === "success" && product.id && !product.id.startsWith("optimistic");
+  
+  // Can delete if product exists and is not currently being saved
+  const canDelete = 
+    status !== "pending" && product.id && !product.id.startsWith("optimistic");
 
   return (
     <div
@@ -96,19 +102,42 @@ export default function ProductSessionCreationItem({
           )}
         </div>
 
-        {/* Edit Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onEdit(product)}
-          className="ml-2 h-8 w-8 p-0"
-          disabled={!canEdit}
-          title={
-            canEdit ? "Edit product" : "Product must be saved before editing"
-          }
-        >
-          <Pencil className="h-3 w-3" />
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1 ml-2">
+          {/* Edit Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(product)}
+            className="h-8 w-8 p-0"
+            disabled={!canEdit}
+            title={
+              canEdit ? "Edit product" : "Product must be saved before editing"
+            }
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+          
+          {/* Delete Button */}
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(product)}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              disabled={!canDelete}
+              title={
+                canDelete 
+                  ? "Delete product" 
+                  : status === "pending" 
+                    ? "Cannot delete while saving" 
+                    : "Product must be saved before deleting"
+              }
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
