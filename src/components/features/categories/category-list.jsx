@@ -105,8 +105,17 @@ export default function CategoryList({
       };
     }
 
-    // Fallback to the existing logic if no selectedCategoryData
-    return sortCategoriesWithSelectedFirst(rawCategories, selectedCategoryId);
+    // If no selectedCategoryData but we have a selectedCategoryId, treat as "has selection"
+    if (selectedCategoryId) {
+      return sortCategoriesWithSelectedFirst(rawCategories, selectedCategoryId);
+    }
+
+    // No selection - show all categories and indicate uncategorized state
+    return {
+      selectedCategory: null,
+      otherCategories: rawCategories,
+      hasSelected: false,
+    };
   }, [rawCategories, selectedCategoryId, selectedCategoryData]);
 
   if (isLoading) {
@@ -131,12 +140,32 @@ export default function CategoryList({
 
   if (rawCategories.length === 0 && !selectedCategoryData) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <div className="text-sm text-muted-foreground mb-2">
-          No categories yet
+      <div>
+        {/* Always show SelectedCategoryBar for uncategorized state */}
+        <SelectedCategoryBar
+          selectedCategory={null}
+          selectedCategoryId={selectedCategoryId}
+          onCategorySelect={onCategorySelect}
+        />
+        
+        <div className="relative py-2 mb-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-muted-foreground/20" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-background px-2 text-muted-foreground">
+              Categories
+            </span>
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground">
-          Create your first category to get started
+        
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="text-sm text-muted-foreground mb-2">
+            No categories yet
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Create your first category to get started
+          </div>
         </div>
       </div>
     );

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { getCategoriesPaginatedApi } from "@/lib/api/categories";
@@ -179,6 +179,10 @@ export function useSimpleCategoryPagination({
   const [currentCursor, setCurrentCursor] = useState(null);
   const [direction, setDirection] = useState("forward");
   const [pageHistory, setPageHistory] = useState([]);
+  // Flag to avoid infinite auto-back loops
+  const [autoBackTriggered, setAutoBackTriggered] = useState(false);
+  // Cache total categories from first page to show on subsequent pages
+  const [cachedTotalCategories, setCachedTotalCategories] = useState(0);
   
   // Normalize search query
   const normalizedSearch = useMemo(() => {
@@ -220,9 +224,23 @@ export function useSimpleCategoryPagination({
 
   const currentPage = data?.pages?.[0];
   const categories = currentPage?.categories || [];
-  const totalCategories = currentPage?.totalCategories || 0;
   const hasNextPage = currentPage?.hasNextPage || false;
   const hasPreviousPage = pageHistory.length > 0 || currentPage?.hasPrevPage || false;
+
+  // Cache total categories from first page (when cursor is null) to show on subsequent pages
+  useEffect(() => {
+    if (currentPage?.totalCategories && currentPage.totalCategories > 0) {
+      setCachedTotalCategories(currentPage.totalCategories);
+    }
+  }, [currentPage?.totalCategories]);
+
+  // Reset cached total when search query changes
+  useEffect(() => {
+    setCachedTotalCategories(0);
+  }, [normalizedSearch]);
+
+  // Use cached total or current page total (fallback to cached for pages 2+)
+  const totalCategories = currentPage?.totalCategories || cachedTotalCategories;
 
   // Navigation methods
   const goToNextPage = () => {
@@ -250,9 +268,25 @@ export function useSimpleCategoryPagination({
     setCurrentCursor(null);
     setDirection("forward");
     setPageHistory([]);
+    setAutoBackTriggered(false); // Reset auto-back flag when resetting pagination
+    setCachedTotalCategories(0); // Reset cached total when resetting pagination
   };
 
   const isEmpty = categories.length === 0 && !isLoading;
+
+  // Automatically navigate backward when current page becomes empty and previous pages exist
+  useEffect(() => {
+    if (!isFetching && !isLoading) {
+      const shouldGoBack = categories.length === 0 && hasPreviousPage;
+      if (shouldGoBack && !autoBackTriggered) {
+        goToPreviousPage();
+        setAutoBackTriggered(true);
+      } else if (categories.length > 0 && autoBackTriggered) {
+        // Reset flag once data is present again
+        setAutoBackTriggered(false);
+      }
+    }
+  }, [categories.length, hasPreviousPage, isFetching, isLoading, autoBackTriggered, goToPreviousPage]);
 
   return {
     // Data
