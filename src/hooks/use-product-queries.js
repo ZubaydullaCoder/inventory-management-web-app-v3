@@ -234,6 +234,8 @@ export function useCreateProduct() {
       
       // Invalidate product lists to refetch from server
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      // Invalidate categories to reflect updated product counts
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() });
       // Invalidate name check for this name
       if (context?.normalizedName) {
         queryClient.invalidateQueries({
@@ -362,7 +364,7 @@ export function useUpdateProduct() {
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
 
       // Invalidate categories in case a new category was created during the product update
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() });
 
       // --- ENHANCED: Invalidate ALL name check variations for both old and new names ---
       // This ensures creation form cache is properly cleared
@@ -455,6 +457,8 @@ export function useDeleteProduct() {
     onSuccess: () => {
       // Invalidate product lists to refetch from server and sync any changes
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      // Invalidate categories to reflect updated product counts
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() });
     },
   });
 }

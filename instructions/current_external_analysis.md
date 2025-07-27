@@ -1,69 +1,73 @@
-# External Analysis: Enhancing Category Search in Product Creation Form
+Of course. I have analyzed your request and the codebase. This is a classic and important data synchronization issue that can lead to user confusion. My evaluation is that your request is clear, actionable, and crucial for ensuring data consistency across the application.
+
+Here is the plan to resolve the stale category data issue.
 
 ### Step 1 — Intent Clarification & Request Evaluation
 
-Your request is clear, applicable, and actionable. The core intent is to improve the user experience within the product creation form by making the category search "smarter" and more forgiving of typos. You want to align its behavior with the existing product search functionality for consistency, while ensuring the solution is safely integrated without disrupting the form's primary functions. This is an excellent goal for improving usability.
+The request is perfectly clear. The core issue is that a mutation on one resource (a `Product`) is not triggering a data refresh for a related but separate resource (`Category`), leading to a stale client-side cache. The goal is to ensure that when a product's category is changed, any component displaying category information anywhere in the app will reflect this change automatically upon navigation, without requiring a manual page refresh.
 
 ### Step 2 — What Do We Implement?
 
 **Current Behavior:**
-When a user is creating or editing a product, they interact with a `CategorySection` component. If they type "c1" into the search filter, the list does not show "category-1" because the current search logic only finds exact substrings. This forces the user to type more precise queries.
+A user on the main product list page edits a product, changing its category from "Electronics" to "Appliances". The product list itself updates correctly. However, when the user then navigates to the "Add New Product" page, the `CategoryList` component on that page still displays the old product counts for "Electronics" and "Appliances". The application is showing stale data because the cache for categories has not been informed that it is out of date.
 
 **Expected Behavior After Implementation:**
-The category search will become significantly more intelligent and typo-tolerant. When a user types "c1" into the filter, the system will correctly identify "category-1" as a likely match and display it in the results. The search will handle various user inputs gracefully, including:
-
-- **Typos:** "catgory" will match "Category".
-- **Subsequences:** "cgy1" will match "Category-1".
-- **Partial Words:** "cat" will match "Category".
-
-This enhancement will create a more fluid and efficient workflow, reducing user friction and making category selection faster and more intuitive, consistent with the product search experience.
+After a user changes a product's category from "Electronics" to "Appliances", the underlying cache management system will be immediately notified. When the user navigates to the "Add New Product" page, the `CategoryList` component will automatically refetch the category data because it has been marked as stale. The user will see the correct, updated product counts for both "Electronics" (count decreased by one) and "Appliances" (count increased by one) instantly and seamlessly. This ensures data integrity and a trustworthy user experience across the entire application.
 
 ### Step 3 — How Do We Implement?
 
-The root cause of the discrepancy is that the product search uses a sophisticated, multi-strategy fuzzy search engine at the database level (`src/lib/data/products-search.js`), while the category search currently uses a basic Prisma `contains` filter within its API route.
+The root cause lies within the success handler of the product update mutation. The current implementation correctly invalidates the _product_ cache but is unaware that it must also invalidate the _category_ cache, as changing a product's category inherently changes the data for categories (specifically, their associated product counts).
 
-We will replicate the advanced search pattern from products and apply it to categories. This approach reuses established architecture, ensures consistency, and is highly maintainable.
+The solution is to leverage TanStack Query's cache invalidation mechanism more comprehensively. We will tell the `useUpdateProduct` mutation that a successful update should also mark all category-related queries as stale.
 
-**The plan is as follows:**
+**Technical Plan:**
 
-1.  **Enhance the Database Schema for Performance:**
+1.  **Locate the Source of the Mutation:** The logic for updating a product is encapsulated in the `useUpdateProduct` hook, located in `src/hooks/use-product-queries.js`.
 
-    - The product search performance relies on a GIN trigram index in PostgreSQL. We will add a similar index to the `name` field of the `Category` model in `prisma/schema.prisma`. This is crucial for making the fuzzy text search fast and efficient.
+2.  **Identify the `onSuccess` Callback:** Inside this hook, the `useMutation` call has an `onSuccess` callback. This is where the current product cache invalidation happens:
 
-2.  **Create a Dedicated Category Search Module:**
+    ```javascript
+    // Inside useUpdateProduct...
+    onSuccess: (_data, variables, context) => {
+      // This line already exists and works for the product list.
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
 
-    - We will create a new file: `src/lib/data/categories-search.js`.
-    - This module will be a simplified adaptation of the existing `src/lib/data/products-search.js`. It will contain a primary function, `fuzzySearchCategories`, that executes raw SQL queries using strategies like trigram similarity to find typo-tolerant matches for a given search term within the `Category` table.
+      // ... other logic for name checks ...
+    },
+    ```
 
-3.  **Upgrade the API Route with Intelligent Logic:**
+3.  **Enhance the `onSuccess` Callback:** We will add a single, critical line to this callback. We will instruct the query client to also invalidate all queries related to categories. This will ensure that any component in the application that uses category data will refetch it the next time it is rendered.
 
-    - We will modify the primary data-fetching API for categories: `src/app/api/categories/cursor/route.js`.
-    - This route will be updated with conditional logic:
-      - **If a search query is present**, it will now call our new `fuzzySearchCategories` function to get intelligent, typo-tolerant results.
-      - **If the search query is empty**, it will continue to use the existing, highly efficient Prisma query to fetch the initial, unfiltered list of categories.
-    - This conditional approach provides the best of both worlds: intelligent search when needed and maximum performance for general browsing.
+    The query keys are centrally managed in `src/lib/queryKeys.js`, so we will use the established key for all category queries, which is `queryKeys.categories.all()`.
 
-4.  **Verify Frontend Integration:**
-    - The existing frontend hook, `useSimpleCategoryPagination` (in `src/hooks/use-category-pagination.js`), already correctly debounces user input and passes the search query to the API. No changes are expected here, but we will confirm its behavior remains correct. The components using this hook will automatically benefit from the smarter backend API without needing modification.
+    **Proposed Code Addition:**
+
+    ````javascript
+    // In src/hooks/use-product-queries.js, inside the onSuccess callback of useUpdateProduct
+
+    // This new line is the core of the fix.
+    // It tells TanStack Query that any data related to categories is now stale.
+    queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() });
+    ```    This is the most efficient and idiomatic approach. It doesn't require manual cache manipulation, which would be complex and error-prone. Instead, we declaratively state that the category data is no longer fresh, and let TanStack Query handle the refetching automatically.
+    ````
 
 ### Step 4 — Final Plan Summary
 
-The implementation will be broken down into the following sequential phases:
+The implementation is a highly targeted and safe change focused on a single file.
 
-- **Phase 1: Database Schema Update**
+- **Phase 1: Locate and Analyze the Mutation Hook**
 
-  - **File:** `prisma/schema.prisma`
-  - **Action:** Add a `@@index` attribute to the `Category` model for the `name` field, configured for GIN trigram operations to enable efficient fuzzy searching. Run `prisma migrate` to apply the change.
+  - **File:** `src/hooks/use-product-queries.js`
+  - **Action:** Open the file and find the `useUpdateProduct` function. Examine the `onSuccess` callback within its `useMutation` options to confirm the existing logic.
 
-- **Phase 2: Implement Category Search Service**
+- **Phase 2: Implement Cross-Resource Cache Invalidation**
 
-  - **File:** Create `src/lib/data/categories-search.js`.
-  - **Action:** Adapt the logic from `src/lib/data/products-search.js` to create a `fuzzySearchCategories` function tailored for the `Category` model.
+  - **File:** `src/hooks/use-product-queries.js`
+  - **Action:** Add the line `queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() });` inside the `onSuccess` callback. This will ensure that after a product is successfully updated, both product and category data are marked as stale.
 
-- **Phase 3: Integrate Advanced Search into the API**
-
-  - **File:** `src/app/api/categories/cursor/route.js`
-  - **Action:** Modify the `GET` handler to import and use the new `fuzzySearchCategories` function when the `search` URL parameter is not empty. The existing logic will be preserved for requests without a search term.
-
-- **Phase 4: Final Verification**
-  - **Action:** Manually test the category search functionality within the product creation and edit forms. Confirm that typo-tolerant search works as expected and that other functionalities like selecting, creating, and clearing categories are unaffected.
+- **Phase 3: Verification**
+  - **Action:** Follow the user's reported scenario to test the fix:
+    1.  Navigate to the main products list page.
+    2.  Open the edit modal for a product and change its category. Save the change.
+    3.  Navigate to the "Add New Product" page (`/inventory/products/new`).
+    4.  Observe the `CategorySection` component and confirm that the product counts for the affected categories are immediately and correctly updated without requiring a page refresh.
