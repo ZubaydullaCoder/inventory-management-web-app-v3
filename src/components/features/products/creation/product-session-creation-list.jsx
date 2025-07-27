@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Package } from "lucide-react";
+import { useRouter } from "next/navigation";
 import ProductSessionCreationItem from "./product-session-creation-item";
+import { Button } from "@/components/ui/button";
 import ProductEditModal from "../edit/product-edit-modal";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { useDeleteProduct } from "@/hooks/use-product-queries";
@@ -16,12 +18,14 @@ import { toast } from "sonner";
  * @returns {JSX.Element}
  */
 export default function ProductSessionCreationList({ products = [] }) {
+  const router = useRouter();
   const [editingProduct, setEditingProduct] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
-  
+
   // Hook for deleting products
-  const { mutateAsync: deleteProductAsync, isPending: isDeleting } = useDeleteProduct();
+  const { mutateAsync: deleteProductAsync, isPending: isDeleting } =
+    useDeleteProduct();
 
   /**
    * Handles the edit action for a product.
@@ -52,7 +56,7 @@ export default function ProductSessionCreationList({ products = [] }) {
     // Updates are now handled directly in the mutation hooks
     // via TanStack Query cache updates
   };
-  
+
   /**
    * Handles the delete action for a product.
    * @param {object} product
@@ -60,18 +64,18 @@ export default function ProductSessionCreationList({ products = [] }) {
   const handleDeleteProduct = (product) => {
     setProductToDelete(product);
   };
-  
+
   /**
    * Handles the confirmed deletion of a product.
    */
   const handleConfirmDelete = () => {
     if (!productToDelete) return;
-    
+
     const deletePromise = deleteProductAsync(productToDelete.id);
-    
+
     // Close dialog immediately for better UX
     setProductToDelete(null);
-    
+
     toast.promise(deletePromise, {
       loading: "Deleting product...",
       success: "Product deleted successfully!",
@@ -81,7 +85,7 @@ export default function ProductSessionCreationList({ products = [] }) {
       },
     });
   };
-  
+
   /**
    * Handles closing the delete confirmation dialog.
    */
@@ -120,11 +124,18 @@ export default function ProductSessionCreationList({ products = [] }) {
         </div>
 
         {/* Fixed summary at bottom */}
-        <div className="flex-shrink-0 pt-4 mt-4 border-t border-border">
+        <div className="flex-shrink-0 pt-4 mt-4 border-t border-border space-y-4">
           <p className="text-sm text-muted-foreground text-center">
             {products.length} product{products.length !== 1 ? "s" : ""} in this
             session
           </p>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => router.push("/products")}
+          >
+            Finish and Return to Products
+          </Button>
         </div>
       </div>
 
@@ -135,14 +146,18 @@ export default function ProductSessionCreationList({ products = [] }) {
         product={editingProduct}
         onSuccess={handleEditSuccess}
       />
-      
+
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
         open={!!productToDelete}
         onOpenChange={handleCloseDeleteDialog}
         onConfirm={handleConfirmDelete}
         title="Delete Product"
-        description={productToDelete ? `Are you sure you want to delete "${productToDelete.name}"? This action cannot be undone.` : ""}
+        description={
+          productToDelete
+            ? `Are you sure you want to delete "${productToDelete.name}"? This action cannot be undone.`
+            : ""
+        }
         isPending={isDeleting}
       />
     </>
