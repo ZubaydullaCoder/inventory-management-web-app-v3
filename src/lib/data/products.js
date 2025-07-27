@@ -443,8 +443,12 @@ export async function getProductsByShopIdCursor(
         ? hasMoreItemsInCurrentDirection
         : Boolean(cursor); // If we came from somewhere, we can go backward
 
-    // Remove the extra item if present
-    const finalProducts = orderedProducts.slice(0, limit);
+    // Remove the extra item if present, handling both directions correctly
+    const finalProducts = hasMoreItemsInCurrentDirection
+      ? direction === "backward"
+        ? orderedProducts.slice(1) // For backward pagination, remove first item (the extra one)
+        : orderedProducts.slice(0, limit) // For forward pagination, remove last item
+      : orderedProducts; // No extra item, use all
 
     // Generate cursors for next/previous pages
     const nextCursor =

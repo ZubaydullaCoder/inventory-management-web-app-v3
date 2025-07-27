@@ -64,7 +64,7 @@ export async function createCategory(categoryData, shopId) {
       shopId: shopId,
     },
   });
-  
+
   // Add productCount to the newly created category (always 0 for new categories)
   return {
     ...category,
@@ -188,12 +188,7 @@ export async function getAllCategoriesByShopId(shopId) {
  */
 export async function getCategoriesByShopIdCursor(
   shopId,
-  {
-    cursor = null,
-    direction = "forward",
-    limit = 10,
-    search = "",
-  }
+  { cursor = null, direction = "forward", limit = 10, search = "" }
 ) {
   try {
     const trimmedSearch = search ? search.trim() : "";
@@ -210,10 +205,7 @@ export async function getCategoriesByShopIdCursor(
     };
 
     // Build cursor condition for pagination
-    const cursorCondition = buildCategoryCursorCondition(
-      cursor,
-      direction
-    );
+    const cursorCondition = buildCategoryCursorCondition(cursor, direction);
     if (cursorCondition) {
       Object.assign(whereClause, cursorCondition);
     }
@@ -263,8 +255,12 @@ export async function getCategoriesByShopIdCursor(
         ? hasMoreItemsInCurrentDirection
         : Boolean(cursor); // If we came from somewhere, we can go backward
 
-    // Remove the extra item if present
-    const finalCategories = orderedCategories.slice(0, limit);
+    // Remove the extra item if present, handling both directions correctly
+    const finalCategories = hasMoreItemsInCurrentDirection
+      ? direction === "backward"
+        ? orderedCategories.slice(1) // For backward pagination, remove first item (the extra one)
+        : orderedCategories.slice(0, limit) // For forward pagination, remove last item
+      : orderedCategories; // No extra item, use all
 
     // Map the _count.products to productCount for easier consumption
     const categoriesWithProductCount = finalCategories.map((category) => ({
@@ -276,7 +272,9 @@ export async function getCategoriesByShopIdCursor(
     // Generate cursors for next/previous pages
     const nextCursor =
       hasNextPage && categoriesWithProductCount.length > 0
-        ? generateCategoryCursor(categoriesWithProductCount[categoriesWithProductCount.length - 1])
+        ? generateCategoryCursor(
+            categoriesWithProductCount[categoriesWithProductCount.length - 1]
+          )
         : null;
 
     const prevCursor =
@@ -343,10 +341,7 @@ function buildCategoryOrderByClause(direction) {
 
   // For backward pagination, we reverse the order
   if (direction === "backward") {
-    return [
-      { name: "desc" },
-      { id: "desc" },
-    ];
+    return [{ name: "desc" }, { id: "desc" }];
   }
 
   return baseOrder;
