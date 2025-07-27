@@ -16,12 +16,14 @@ import { toast } from "sonner";
  * @param {string} [props.selectedCategoryId] - Currently selected category ID
  * @param {function} [props.onSelect] - Callback when category is selected
  * @param {boolean} [props.isSelectable] - Whether the category can be selected
+ * @param {function} [props.onDeleteSuccess] - Callback when selected category is deleted successfully
  */
 export default function CategoryItem({
   category,
   selectedCategoryId,
   onSelect,
   isSelectable = true,
+  onDeleteSuccess,
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -54,6 +56,10 @@ export default function CategoryItem({
     deleteCategory(category.id, {
       onSuccess: () => {
         setShowDeleteConfirm(false);
+        // If the deleted category was selected, clear the selection
+        if (isSelected && onDeleteSuccess) {
+          onDeleteSuccess();
+        }
         // Success toast is shown by the hook
       },
       onError: (error) => {

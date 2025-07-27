@@ -13,6 +13,9 @@ import { useSimpleCategoryPagination } from "@/hooks/use-category-pagination";
 import { normalizeCategoryName } from "@/lib/utils";
 import { sortCategoriesWithSelectedFirst } from "@/lib/category-utils";
 
+// Define and export a constant for the uncategorized state
+export const UNCATEGORIZED_ID = "";
+
 /**
  * List component for displaying paginated categories with search filtering
  * @param {Object} props
@@ -28,6 +31,8 @@ export default function CategoryList({
   pageSize = 5,
   usePagination = true, // New prop to enable/disable pagination
 }) {
+  // ... (rest of the component setup remains the same)
+
   // Use paginated categories when enabled, fallback to regular fetch
   const paginationResult = useSimpleCategoryPagination({
     pageSize,
@@ -89,6 +94,13 @@ export default function CategoryList({
     ? hasNextPage
     : fallbackCategories.length > pageSize;
 
+  // Handle clearing selection when a selected category is deleted
+  const handleSelectionClear = () => {
+    if (onCategorySelect) {
+      onCategorySelect(UNCATEGORIZED_ID);
+    }
+  };
+
   // Sort categories with selected first for enhanced UX
   // Always use separately fetched selected category to ensure persistence across pagination
   const { selectedCategory, otherCategories, hasSelected } = useMemo(() => {
@@ -147,7 +159,7 @@ export default function CategoryList({
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={onCategorySelect}
         />
-        
+
         <div className="relative py-2 mb-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-muted-foreground/20" />
@@ -158,7 +170,7 @@ export default function CategoryList({
             </span>
           </div>
         </div>
-        
+
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <div className="text-sm text-muted-foreground mb-2">
             No categories yet
@@ -203,6 +215,7 @@ export default function CategoryList({
         selectedCategory={selectedCategory}
         selectedCategoryId={selectedCategoryId}
         onCategorySelect={onCategorySelect}
+        onDeleteSuccess={handleSelectionClear}
       />
 
       {/* Separator between selected and other categories */}
@@ -228,6 +241,7 @@ export default function CategoryList({
             selectedCategoryId={selectedCategoryId}
             onSelect={onCategorySelect}
             isSelectable={!!onCategorySelect}
+            onDeleteSuccess={handleSelectionClear}
           />
         ))}
       </div>
