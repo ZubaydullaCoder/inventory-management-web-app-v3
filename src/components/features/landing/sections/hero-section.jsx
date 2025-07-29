@@ -1,4 +1,5 @@
 import DynamicCtaButton from "@/components/features/auth/dynamic-cta-button";
+import LandingSection from "../landing-section";
 
 /**
  * Hero section component for the landing page.
@@ -10,8 +11,8 @@ import DynamicCtaButton from "@/components/features/auth/dynamic-cta-button";
  */
 export default function HeroSection({ session }) {
   return (
-    <section className="bg-gradient-to-b from-background to-muted/20 py-16 md:py-24">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <LandingSection className="bg-gradient-to-b from-background to-muted/20">
+      <div className="text-center">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
           Take Control of Your <span className="text-primary">Retail Shop</span>
         </h1>
@@ -31,6 +32,6 @@ export default function HeroSection({ session }) {
           </DynamicCtaButton>
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 }

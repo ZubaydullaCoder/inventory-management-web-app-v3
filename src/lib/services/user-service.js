@@ -1,8 +1,9 @@
 import prisma from "@/lib/prisma";
 
 /**
- * Service layer function that handles the creation of a new user and their associated shop and subscription
- * in a single atomic transaction. If the user already exists, it checks for and creates a shop if needed.
+ * Service layer function that handles the creation of a new user and their associated
+ * shop and subscription in a single atomic transaction. If the user already exists,
+ * it checks for and creates a shop and subscription if needed.
  *
  * This is a complex business operation that spans multiple models (User, Shop, Subscription),
  * which is why it belongs in the service layer rather than the data layer.
@@ -17,32 +18,44 @@ export async function upsertUserAndCreateShop(user) {
   }
 
   try {
-    // Check if the user already exists in our database
-    const existingUser = await prisma.user.findUnique({
+    // --- OPTIMIZATION ---
+    // Fetch the user and their related shop in a single, efficient query.
+    const existingUserWithShop = await prisma.user.findUnique({
       where: { email: user.email },
+      include: { shop: true }, // Eagerly load the shop relation
     });
 
-    // If the user already exists, the process is successful. Return the user.
-    if (existingUser) {
-      // User exists, now check if they have a shop.
-      const existingShop = await prisma.shop.findUnique({
-        where: { ownerId: existingUser.id },
-      });
-      if (!existingShop) {
-        // If they don't have a shop, create one for them.
-        await prisma.shop.create({
-          data: {
-            name: `${existingUser.name}'s Shop`,
-            ownerId: existingUser.id,
-            // Also create a default subscription here if needed
-          },
+    // --- Case 1: User already exists ---
+    if (existingUserWithShop) {
+      // If the user exists but does not have a shop, create one for them
+      // along with the default trial subscription. This ensures data consistency.
+      if (!existingUserWithShop.shop) {
+        await prisma.$transaction(async (tx) => {
+          const newShop = await tx.shop.create({
+            data: {
+              name: `${existingUserWithShop.name}'s Shop`,
+              ownerId: existingUserWithShop.id,
+            },
+          });
+
+          const trialEndDate = new Date();
+          trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+          await tx.subscription.create({
+            data: {
+              shopId: newShop.id,
+              plan: "FREE_TRIAL",
+              status: "TRIALING",
+              endDate: trialEndDate,
+            },
+          });
         });
       }
-      return existingUser; // Return the user
+      return existingUserWithShop; // Return the existing user
     }
 
-    // If the user is new, create the User, Shop, and Subscription
-    // in a single atomic transaction to ensure data integrity.
+    // --- Case 2: User is new ---
+    // Create the User, Shop, and Subscription in a single atomic transaction.
     const newUser = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {

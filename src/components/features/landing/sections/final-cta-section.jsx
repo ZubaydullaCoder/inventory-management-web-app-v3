@@ -1,5 +1,6 @@
 import DynamicCtaButton from "@/components/features/auth/dynamic-cta-button";
 import DynamicSectionContent from "@/components/features/landing/dynamic-section-content";
+import LandingSection from "../landing-section";
 
 /**
  * Final CTA section component for the landing page.
@@ -11,8 +12,8 @@ import DynamicSectionContent from "@/components/features/landing/dynamic-section
  */
 export default function FinalCtaSection({ session }) {
   return (
-    <section className="py-16 md:py-24">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <LandingSection>
+      <div className="text-center">
         <DynamicSectionContent session={session} section="cta" />
         <DynamicCtaButton
           session={session}
@@ -23,6 +24,6 @@ export default function FinalCtaSection({ session }) {
           Start Your Free Trial Today
         </DynamicCtaButton>
       </div>
-    </section>
+    </LandingSection>
   );
 }
