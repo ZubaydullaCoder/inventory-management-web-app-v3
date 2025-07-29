@@ -101,6 +101,11 @@ export async function POST(request) {
       );
     }
 
+    // Handle category authorization error
+    if (error.message?.includes("Invalid category")) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
     // Handle Prisma unique constraint violations (P2002)
     if (error.code === "P2002" && error.meta?.target?.includes("name")) {
       return NextResponse.json(

@@ -74,8 +74,26 @@ export async function isProductNameTaken(
  * @param {z.infer<ProductCreateInput>} productData - The validated product data.
  * @param {string} shopId - The ID of the shop this product belongs to.
  * @returns {Promise<import('@prisma/client').Product>} The newly created product.
+ * @throws {Error} If the provided categoryId does not belong to the shop
  */
 export async function createProduct(productData, shopId) {
+  // Security Check: Validate that the category belongs to the shop if categoryId is provided
+  if (productData.categoryId) {
+    const category = await prisma.category.findFirst({
+      where: {
+        id: productData.categoryId,
+        shopId: shopId,
+      },
+      select: { id: true }, // Only need to check for existence
+    });
+
+    if (!category) {
+      throw new Error(
+        "Invalid category specified. The category must belong to your shop."
+      );
+    }
+  }
+
   // Normalize the product name before creating
   const normalizedProductData = {
     ...productData,
@@ -413,8 +431,9 @@ export async function getProductsByShopIdCursor(
       direction === "backward" ? reverseOrder(orderBy) : orderBy;
 
     // Determine if we have active filters
-    const hasFilters = trimmedNameFilter || (categoryFilter && categoryFilter.trim());
-    
+    const hasFilters =
+      trimmedNameFilter || (categoryFilter && categoryFilter.trim());
+
     const [products, filteredCount, totalProducts] = await Promise.all([
       prisma.product.findMany({
         where: whereClause,
@@ -440,7 +459,7 @@ export async function getProductsByShopIdCursor(
       }),
       // Get total unfiltered count (for "showing X of Y" display)
       prisma.product.count({
-        where: { shopId }
+        where: { shopId },
       }),
     ]);
 
@@ -639,7 +658,7 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
   const [fuzzyResults, totalProducts] = await Promise.all([
     fuzzySearchProducts(query, shopId, Math.max(limit * 10, 100)), // Get more results for accurate total count
     // Get total unfiltered count for the shop
-    prisma.product.count({ where: { shopId } })
+    prisma.product.count({ where: { shopId } }),
   ]);
 
   // Apply category filter if specified
