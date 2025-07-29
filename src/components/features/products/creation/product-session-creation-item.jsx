@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Pencil, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NumericFormat } from "react-number-format";
@@ -18,7 +19,7 @@ import { NumericFormat } from "react-number-format";
  * @param {ProductSessionItemProps} props
  * @returns {JSX.Element}
  */
-export default function ProductSessionCreationItem({
+function ProductSessionCreationItem({
   product,
   status,
   onEdit,
@@ -142,3 +143,5 @@ export default function ProductSessionCreationItem({
     </div>
   );
 }
+
+export default React.memo(ProductSessionCreationItem);
