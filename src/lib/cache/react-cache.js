@@ -18,15 +18,15 @@ export function createQueryCache(queryFn) {
  */
 export const cachedProductQueries = {
   /**
-   * Cached version of getProductsByShopId
+   * Cached version of getProductsByShopIdCursor
    * @param {string} shopId
    * @param {object} options
    * @returns {Promise}
    */
-  getProductsByShopId: cache(async (shopId, options) => {
+  getProductsByShopIdCursor: cache(async (shopId, options) => {
     // Import here to avoid circular dependency
-    const { getProductsByShopId } = await import("@/lib/data/products");
-    return getProductsByShopId(shopId, options);
+    const { getProductsByShopIdCursor } = await import("@/lib/data/products");
+    return getProductsByShopIdCursor(shopId, options);
   }),
 
   /**

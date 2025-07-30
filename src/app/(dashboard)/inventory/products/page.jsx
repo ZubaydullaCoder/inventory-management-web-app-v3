@@ -17,8 +17,9 @@ export default async function ProductsPage({ searchParams }) {
 
   const resolvedSearchParams = await searchParams;
 
-  // Parse URL parameters with validation and defaults
-  const page = Math.max(1, parseInt(resolvedSearchParams?.page || "1", 10));
+  // Parse URL parameters for cursor pagination
+  const cursor = resolvedSearchParams?.cursor || null;
+  const direction = resolvedSearchParams?.direction || "forward";
   const limit = Math.max(
     1,
     Math.min(100, parseInt(resolvedSearchParams?.limit || "10", 10))
@@ -46,10 +47,11 @@ export default async function ProductsPage({ searchParams }) {
   let error = null;
 
   try {
-    const result = await cachedProductQueries.getProductsByShopId(
+    const result = await cachedProductQueries.getProductsByShopIdCursor(
       session.user.shopId,
       {
-        page,
+        cursor,
+        direction,
         limit,
         sortBy: validSortBy,
         sortOrder,
@@ -85,9 +87,7 @@ export default async function ProductsPage({ searchParams }) {
       ) : (
         <ProductDisplayList
           initialData={initialData}
-          initialPage={page}
           initialLimit={limit}
-          useCursorPagination={true} // Enable cursor pagination for better performance
         />
       )}
     </div>

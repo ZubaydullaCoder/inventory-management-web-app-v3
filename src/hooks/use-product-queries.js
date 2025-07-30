@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { normalizeProductName } from "@/lib/utils";
 import {
-  getProductsApi,
   createProductApi,
   updateProductApi,
   checkProductNameApi,
@@ -44,49 +43,6 @@ export function useCheckProductName(
   });
 }
 
-/**
- * Hook to fetch paginated products with TanStack Query.
- * Uses granular caching strategy optimized for product data volatility.
- * @param {{page?: number, limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, enableFuzzySearch?: boolean}} options - Pagination, sorting, and filtering options.
- * @returns {Object} TanStack Query result object.
- */
-export function useGetProducts(options = {}) {
-  const {
-    page = 1,
-    limit = 10,
-    sortBy,
-    sortOrder,
-    nameFilter,
-    categoryFilter,
-    enableFuzzySearch = true,
-  } = options;
-
-  return useQuery({
-    queryKey: queryKeys.products.list({
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-      nameFilter,
-      categoryFilter,
-      enableFuzzySearch,
-    }),
-    queryFn: () =>
-      getProductsApi({
-        page,
-        limit,
-        sortBy,
-        sortOrder,
-        nameFilter,
-        categoryFilter,
-        enableFuzzySearch,
-      }),
-    staleTime: 2 * 60 * 1000, // 2 minutes - products change frequently
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch on window focus for better UX
-    refetchOnMount: "always", // Always refetch on mount to ensure fresh data
-  });
-}
 
 /**
  * Hook to fetch products using cursor-based pagination with TanStack Query.

@@ -3,18 +3,22 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { productCreateSchema } from "@/lib/zod-schemas";
-import { createProduct, getProductsByShopId, getProductsByShopIdCursor } from "@/lib/data/products";
+import { createProduct, getProductsByShopIdCursor } from "@/lib/data/products";
 import prisma from "@/lib/prisma";
 
 /**
  * Handles GET requests to fetch a paginated list of products for the authenticated user's shop.
- * Supports both offset-based and cursor-based pagination based on the 'pagination' query parameter.
+ * Uses cursor-based pagination for optimal performance.
  * 
  * Query Parameters:
- * - pagination: 'cursor' for cursor-based pagination, otherwise uses offset-based
- * - For offset pagination: page, limit
- * - For cursor pagination: cursor, direction, limit
- * - Common: sortBy, sortOrder, nameFilter, categoryFilter, enableFuzzySearch
+ * - cursor: string (optional) - Base64 encoded cursor for pagination
+ * - direction: 'forward' | 'backward' (default: 'forward')
+ * - limit: number (default: 10)
+ * - sortBy: string (optional)
+ * - sortOrder: 'asc' | 'desc' (optional)
+ * - nameFilter: string (optional)
+ * - categoryFilter: string (optional)
+ * - enableFuzzySearch: boolean (default: true)
  * 
  * @param {Request} request
  * @returns {Promise<NextResponse>}
@@ -29,9 +33,13 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     
-    // Determine pagination strategy
-    const paginationType = searchParams.get("pagination");
-    const useCursorPagination = paginationType === "cursor";
+    // Extract cursor pagination parameters
+    const cursor = searchParams.get("cursor") || null;
+    const direction = searchParams.get("direction") || "forward";
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") || "10", 10),
+      100
+    );
 
     // Extract common parameters
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -39,6 +47,14 @@ export async function GET(request) {
     const nameFilter = searchParams.get("nameFilter") || "";
     const categoryFilter = searchParams.get("categoryFilter") || "";
     const enableFuzzySearch = searchParams.get("enableFuzzySearch") !== "false";
+
+    // Validate direction parameter
+    if (!["forward", "backward"].includes(direction)) {
+      return NextResponse.json(
+        { error: "Invalid direction. Must be 'forward' or 'backward'" },
+        { status: 400 }
+      );
+    }
 
     // Validate sort parameters
     const validSortFields = [
@@ -65,53 +81,16 @@ export async function GET(request) {
       );
     }
 
-    let paginatedData;
-
-    if (useCursorPagination) {
-      // Extract cursor-specific parameters
-      const cursor = searchParams.get("cursor") || null;
-      const direction = searchParams.get("direction") || "forward";
-      const limit = Math.min(
-        parseInt(searchParams.get("limit") || "10", 10),
-        100
-      );
-
-      // Validate direction parameter
-      if (!["forward", "backward"].includes(direction)) {
-        return NextResponse.json(
-          { error: "Invalid direction. Must be 'forward' or 'backward'" },
-          { status: 400 }
-        );
-      }
-
-      paginatedData = await getProductsByShopIdCursor(session.user.shopId, {
-        cursor,
-        direction,
-        limit,
-        sortBy,
-        sortOrder,
-        nameFilter,
-        categoryFilter,
-        enableFuzzySearch,
-      });
-    } else {
-      // Extract offset-specific parameters
-      const page = parseInt(searchParams.get("page") || "1", 10);
-      const limit = Math.min(
-        parseInt(searchParams.get("limit") || "10", 10),
-        100
-      );
-
-      paginatedData = await getProductsByShopId(session.user.shopId, {
-        page,
-        limit,
-        sortBy,
-        sortOrder,
-        nameFilter,
-        categoryFilter,
-        enableFuzzySearch,
-      });
-    }
+    const paginatedData = await getProductsByShopIdCursor(session.user.shopId, {
+      cursor,
+      direction,
+      limit,
+      sortBy,
+      sortOrder,
+      nameFilter,
+      categoryFilter,
+      enableFuzzySearch,
+    });
 
     return NextResponse.json(paginatedData);
   } catch (error) {
@@ -131,25 +110,14 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.shopId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const shop = await prisma.shop.findUnique({
-      where: { ownerId: session.user.id },
-    });
-
-    if (!shop) {
-      return NextResponse.json(
-        { error: "Shop not found for user" },
-        { status: 404 }
-      );
     }
 
     const requestBody = await request.json();
     const validatedData = productCreateSchema.parse(requestBody);
 
-    const newProduct = await createProduct(validatedData, shop.id);
+    const newProduct = await createProduct(validatedData, session.user.shopId);
 
     // Return the newly created product object to support optimistic UI updates on the client.
     return NextResponse.json(newProduct, { status: 201 });
