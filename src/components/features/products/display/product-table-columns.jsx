@@ -178,6 +178,13 @@ export const productColumns = [
     },
     enableSorting: true,
     enableHiding: true,
+    enableColumnFilter: true, // Enable filtering for this column
+    filterFn: (row, id, value) => {
+      // Custom filter function for category filtering
+      if (!value || value.length === 0) return true;
+      const categoryName = row.original.category?.name || "";
+      return value.includes(categoryName);
+    },
     sortingFn: (rowA, rowB) => {
       const a = rowA.original.category?.name || "";
       const b = rowB.original.category?.name || "";

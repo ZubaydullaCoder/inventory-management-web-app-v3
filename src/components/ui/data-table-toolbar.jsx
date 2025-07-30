@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataTableViewOptions } from "@/components/ui/data-table-view-options";
 import { cn } from "@/lib/utils";
+import { ProductCategoryFilter } from "@/components/features/products/display/product-category-filter";
 
 /**
  * Toolbar component for data tables with search and filter functionality.
@@ -32,6 +33,12 @@ export function DataTableToolbar({ table, className, children, bulkActionsCompon
           }
           className="h-8 w-[150px] lg:w-[250px]"
         />
+        {table.getColumn("category") && (
+          <ProductCategoryFilter
+            column={table.getColumn("category")}
+            title="Category"
+          />
+        )}
         {isFiltered && (
           <Button
             variant="ghost"

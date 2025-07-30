@@ -117,7 +117,7 @@ export function useTableCursorUrlState(
           ? [{ id: "name", value: currentState.nameFilter }]
           : []),
         ...(currentState.categoryFilter
-          ? [{ id: "category", value: currentState.categoryFilter }]
+          ? [{ id: "category", value: currentState.categoryFilter.split(",").filter(Boolean) }]
           : []),
       ],
       cursor: {
@@ -214,8 +214,8 @@ export function useTableCursorUrlState(
           : updater;
 
       const nameFilter = newFilters.find((f) => f.id === "name")?.value || "";
-      const categoryFilter =
-        newFilters.find((f) => f.id === "category")?.value || "";
+      const categoryFilterValue = newFilters.find((f) => f.id === "category")?.value;
+      const categoryFilter = Array.isArray(categoryFilterValue) ? categoryFilterValue.join(",") : categoryFilterValue || "";
 
       setLocalFilters({ nameFilter, categoryFilter });
     },

@@ -255,7 +255,11 @@ export async function getProductsByShopIdCursor(
       }),
       ...(categoryFilter &&
         categoryFilter.trim() && {
-          categoryId: categoryFilter.trim(),
+          category: {
+            name: {
+              in: categoryFilter.split(",").map(name => name.trim()).filter(Boolean),
+            },
+          },
         }),
     };
 
@@ -322,7 +326,11 @@ export async function getProductsByShopIdCursor(
           }),
           ...(categoryFilter &&
             categoryFilter.trim() && {
-              categoryId: categoryFilter.trim(),
+              category: {
+                name: {
+                  in: categoryFilter.split(",").map(name => name.trim()).filter(Boolean),
+                },
+              },
             }),
         },
       }),
@@ -533,8 +541,9 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
   // Apply category filter if specified
   let filteredResults = fuzzyResults;
   if (categoryFilter && categoryFilter.trim()) {
+    const categoryNames = categoryFilter.split(",").map(name => name.trim()).filter(Boolean);
     filteredResults = fuzzyResults.filter(
-      (product) => product.category?.id === categoryFilter.trim()
+      (product) => categoryNames.includes(product.category?.name || "")
     );
   }
 
