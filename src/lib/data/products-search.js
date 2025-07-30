@@ -1,17 +1,23 @@
 /**
- * Advanced PostgreSQL Fuzzy Search Implementation
+ * Advanced PostgreSQL Fuzzy Search Implementation with Two-Stage Precision Filtering
  *
  * This module implements a sophisticated multi-strategy search system for products
  * that handles exact matches, typos, abbreviations, and fuzzy matching using
  * PostgreSQL's advanced text search capabilities.
  *
- * Strategies:
+ * Search Architecture:
+ * STAGE 1 - Broad Candidate Selection (Database-level):
  * 1. Exact Match - Direct equality matching
  * 2. Prefix Match - Starts with pattern
  * 3. Substring Match - Contains pattern
  * 4. Acronym Match - Handles abbreviations like "p1" → "product-1"
  * 5. Fuzzy Match (Trigram) - Handles typos via similarity
  * 6. Levenshtein Distance - Advanced typo tolerance
+ *
+ * STAGE 2 - Precision Filtering (In-memory):
+ * For multi-word queries, applies token-based filtering to ensure all query
+ * tokens are present in the product name or SKU, improving precision while
+ * preserving typo tolerance from Stage 1.
  *
  * @module ProductSearch
  */
@@ -294,13 +300,22 @@ async function levenshteinMatch(
 }
 
 /**
- * Multi-Strategy Fuzzy Search
- * Combines all strategies and returns ranked, deduplicated results
+ * Multi-Strategy Fuzzy Search with Two-Stage Precision Filtering
+ * 
+ * STAGE 1: Executes multiple search strategies in parallel to gather broad candidates
+ * that handle typos, abbreviations, and various matching patterns.
  *
- * @param {string} query - Search query
+ * STAGE 2: For multi-word queries, applies precision filtering to ensure all query
+ * tokens are present in results, improving relevance while preserving typo tolerance.
+ *
+ * Example behavior:
+ * - Single word "otverka" → Returns all products containing "otverka" (Stage 1 only)
+ * - Multi-word "otverka qizil marka a50" → Returns products containing ALL tokens (Stage 1 + Stage 2)
+ *
+ * @param {string} query - Search query (single or multi-word)
  * @param {string} shopId - Shop ID to filter by
  * @param {number} maxResults - Maximum results to return
- * @returns {Promise<Array>} Ranked search results
+ * @returns {Promise<Array>} Ranked search results with match metadata
  */
 export async function fuzzySearchProducts(query, shopId, maxResults = 50) {
   if (!query || query.trim().length === 0) {
@@ -351,8 +366,23 @@ export async function fuzzySearchProducts(query, shopId, maxResults = 50) {
       });
     }
 
-    // Convert to array, sort by priority and score, then limit results
-    return Array.from(results.values())
+    // Convert to array for filtering
+    let finalResults = Array.from(results.values());
+
+    // STAGE 2: Precision Filtering for multi-word queries
+    const queryTokens = normalizedQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    if (queryTokens.length > 1) {
+      finalResults = finalResults.filter(product => {
+        const productName = product.name.toLowerCase();
+        const productSku = product.sku ? product.sku.toLowerCase() : '';
+        const searchableText = `${productName} ${productSku}`;
+        
+        return queryTokens.every(token => searchableText.includes(token));
+      });
+    }
+    
+    // Sort by priority and score, then limit results
+    return finalResults
       .sort((a, b) => {
         // First sort by priority (higher priority first)
         if (a.priority !== b.priority) {
