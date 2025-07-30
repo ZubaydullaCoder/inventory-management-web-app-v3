@@ -264,13 +264,26 @@ export async function getProductsByShopIdCursor(
             },
           },
         }),
-      ...(unitFilter &&
-        unitFilter.trim() && {
-          unit: {
-            in: unitFilter.split(",").map(unit => unit.trim()).filter(unit => unit !== ""),
-          },
-        }),
     };
+
+    // Handle unit filtering if specified
+    if (unitFilter && unitFilter.trim()) {
+      const units = unitFilter.split(",").map(u => u.trim());
+      const hasNoUnit = units.includes("");
+      const otherUnits = units.filter(u => u !== "");
+
+      const unitCondition = [];
+      if (hasNoUnit) {
+        unitCondition.push({ unit: null }, { unit: "" });
+      }
+      if (otherUnits.length > 0) {
+        unitCondition.push({ unit: { in: otherUnits } });
+      }
+
+      if (unitCondition.length > 0) {
+        whereClause.OR = whereClause.OR ? [...whereClause.OR, ...unitCondition] : unitCondition;
+      }
+    }
 
     // Build cursor condition for pagination
     const cursorCondition = buildCursorCondition(
@@ -324,8 +337,8 @@ export async function getProductsByShopIdCursor(
         select: selectFields,
       }),
       // Get filtered count (same as current query filters)
-      prisma.product.count({
-        where: {
+      (() => {
+        const countWhereClause = {
           shopId,
           ...(trimmedNameFilter && {
             name: {
@@ -341,14 +354,31 @@ export async function getProductsByShopIdCursor(
                 },
               },
             }),
-          ...(unitFilter &&
-            unitFilter.trim() && {
-              unit: {
-                in: unitFilter.split(",").map(unit => unit.trim()).filter(unit => unit !== ""),
-              },
-            }),
-        },
-      }),
+        };
+
+        // Handle unit filtering for count query
+        if (unitFilter && unitFilter.trim()) {
+          const units = unitFilter.split(",").map(u => u.trim());
+          const hasNoUnit = units.includes("");
+          const otherUnits = units.filter(u => u !== "");
+
+          const unitCondition = [];
+          if (hasNoUnit) {
+            unitCondition.push({ unit: null }, { unit: "" });
+          }
+          if (otherUnits.length > 0) {
+            unitCondition.push({ unit: { in: otherUnits } });
+          }
+
+          if (unitCondition.length > 0) {
+            countWhereClause.OR = countWhereClause.OR ? [...countWhereClause.OR, ...unitCondition] : unitCondition;
+          }
+        }
+
+        return prisma.product.count({
+          where: countWhereClause,
+        });
+      })(),
       // Always get total unfiltered count for consistent UI display
       prisma.product.count({
         where: { shopId },
@@ -562,10 +592,16 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
     );
   }
   if (unitFilter && unitFilter.trim()) {
-    const unitNames = unitFilter.split(",").map(unit => unit.trim()).filter(unit => unit !== "");
-    filteredResults = filteredResults.filter(
-      (product) => unitNames.includes(product.unit || "")
-    );
+    const units = unitFilter.split(",").map(u => u.trim());
+    const hasNoUnit = units.includes("");
+    const otherUnits = units.filter(u => u !== "");
+
+    filteredResults = filteredResults.filter(product => {
+      const productUnit = product.unit || "";
+      if (hasNoUnit && productUnit === "") return true;
+      if (otherUnits.length > 0 && otherUnits.includes(productUnit)) return true;
+      return false;
+    });
   }
 
   // Apply sorting if not relevance-based
