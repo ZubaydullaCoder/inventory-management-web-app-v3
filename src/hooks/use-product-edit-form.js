@@ -25,8 +25,8 @@ export function useProductEditForm({ product, isOpen, onSuccess, onClose }) {
   // react-hook-form setup
   const form = useForm({
     resolver: zodResolver(productCreateSchema),
-    mode: 'onSubmit', // Only validate on form submission
-    reValidateMode: 'onChange', // Clear errors as user fixes them
+    mode: "onSubmit", // Only validate on form submission
+    reValidateMode: "onChange", // Clear errors as user fixes them
     defaultValues: {
       name: "",
       sellingPrice: "",
@@ -40,9 +40,10 @@ export function useProductEditForm({ product, isOpen, onSuccess, onClose }) {
   });
 
   const { control, handleSubmit, reset, watch, formState } = form;
+  const formValues = watch();
 
   // normalize & debounce name for duplicate checking
-  const rawName = watch("name");
+  const rawName = formValues.name;
   const normalized = normalizeProductName(rawName);
   const [debouncedName] = useDebounce(normalized, 500);
 
@@ -119,7 +120,7 @@ export function useProductEditForm({ product, isOpen, onSuccess, onClose }) {
       "supplierId",
     ];
     for (const field of fields) {
-      let formValue = watch(field);
+      let formValue = formValues[field];
       let productValue = product[field];
 
       // Normalize and convert types for comparison
@@ -144,17 +145,7 @@ export function useProductEditForm({ product, isOpen, onSuccess, onClose }) {
       if (formValue !== productValue) return true;
     }
     return false;
-  }, [
-    product,
-    watch("name"),
-    watch("sellingPrice"),
-    watch("purchasePrice"),
-    watch("stock"),
-    watch("unit"),
-    watch("reorderPoint"),
-    watch("categoryId"),
-    watch("supplierId"),
-  ]);
+  }, [product, formValues]);
 
   const onSubmit = useCallback(
     (values) => {

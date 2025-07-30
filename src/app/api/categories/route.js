@@ -19,7 +19,7 @@ export async function GET(request) {
     const session = await auth();
 
     if (!session?.user?.shopId) {
-      return NextResponse.json({ error: 'User has no shop' }, { status: 403 });
+      return NextResponse.json({ error: "User has no shop" }, { status: 403 });
     }
 
     if (!session?.user?.id) {

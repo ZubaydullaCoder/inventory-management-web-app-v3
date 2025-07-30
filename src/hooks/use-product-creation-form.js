@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDebounce } from "use-debounce";
@@ -18,24 +18,28 @@ import { toast } from "sonner";
  */
 export function useProductCreationForm({ excludeId } = {}) {
   // Default form values for reset
-  const initialValues = {
-    name: "",
-    sellingPrice: "",
-    purchasePrice: "",
-    stock: "",
-    unit: "",
-    reorderPoint: "",
-    categoryId: "",
-    supplierId: "",
-  };
+  const initialValues = useMemo(
+    () => ({
+      name: "",
+      sellingPrice: "",
+      purchasePrice: "",
+      stock: "",
+      unit: "",
+      reorderPoint: "",
+      categoryId: "",
+      supplierId: "",
+    }),
+    []
+  );
+
   const nameInputRef = useRef(null);
   const { mutate } = useCreateProduct();
 
   // react-hook-form setup
   const form = useForm({
     resolver: zodResolver(productCreateSchema),
-    mode: 'onSubmit', // Only validate on form submission
-    reValidateMode: 'onChange', // Clear errors as user fixes them
+    mode: "onSubmit", // Only validate on form submission
+    reValidateMode: "onChange", // Clear errors as user fixes them
     defaultValues: initialValues,
   });
   const { control, handleSubmit, reset, watch, formState } = form;
@@ -137,6 +141,7 @@ export function useProductCreationForm({ excludeId } = {}) {
       reset,
       lastUnit,
       lastCategory,
+      initialValues,
     ]
   );
 

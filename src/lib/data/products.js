@@ -192,7 +192,6 @@ export async function updateProduct(productId, productData, shopId) {
  * @property {number} filteredCount - The total number of products matching current filters.
  */
 
-
 /**
  * Fetches products using cursor-based (keyset) pagination for better performance.
  * This approach scales better than offset-based pagination for large datasets.

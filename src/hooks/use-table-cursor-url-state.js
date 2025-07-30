@@ -239,6 +239,8 @@ export function useTableCursorUrlState(
   }, [
     debouncedNameFilter,
     debouncedCategoryFilter,
+    localFilters.nameFilter,
+    localFilters.categoryFilter,
     urlState.cursor,
     updateUrl,
   ]);

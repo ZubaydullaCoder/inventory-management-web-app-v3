@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { getCategoriesPaginatedApi } from "@/lib/api/categories";
@@ -11,7 +11,7 @@ import { normalizeCategoryName } from "@/lib/utils";
 /**
  * Custom hook for category pagination with search and filtering functionality.
  * Uses cursor-based pagination for optimal performance with large datasets.
- * 
+ *
  * @param {Object} options - Hook options
  * @param {number} [options.pageSize=10] - Number of items per page
  * @param {string} [options.searchQuery=""] - Search query for filtering categories
@@ -25,7 +25,7 @@ export function useCategoryPagination({
 } = {}) {
   const queryClient = useQueryClient();
   const [direction, setDirection] = useState("forward");
-  
+
   // Normalize search query
   const normalizedSearch = useMemo(() => {
     return searchQuery ? normalizeCategoryName(searchQuery.trim()) : "";
@@ -50,7 +50,7 @@ export function useCategoryPagination({
     queryFn: ({ pageParam }) => {
       const cursor = pageParam?.cursor || null;
       const currentDirection = pageParam?.direction || "forward";
-      
+
       return getCategoriesPaginatedApi({
         cursor,
         direction: currentDirection,
@@ -86,42 +86,43 @@ export function useCategoryPagination({
   // Flatten pages to get all categories
   const categories = useMemo(() => {
     if (!data?.pages) return [];
-    
+
     return data.pages.flatMap((page) => page.categories || []);
   }, [data?.pages]);
 
   // Get metadata from the first page
   const totalCategories = data?.pages?.[0]?.totalCategories || 0;
-  const currentPageCategories = data?.pages?.[data.pages.length - 1]?.categories || [];
+  const currentPageCategories =
+    data?.pages?.[data.pages.length - 1]?.categories || [];
 
   // Navigation methods
-  const goToNextPage = async () => {
+  const goToNextPage = useCallback(async () => {
     if (hasNextPage) {
       setDirection("forward");
       await fetchNextPage();
     }
-  };
+  }, [hasNextPage, fetchNextPage]);
 
-  const goToPreviousPage = async () => {
+  const goToPreviousPage = useCallback(async () => {
     if (hasPreviousPage) {
       setDirection("backward");
       await fetchPreviousPage();
     }
-  };
+  }, [hasPreviousPage, fetchPreviousPage]);
 
   // Reset pagination when search changes
-  const resetPagination = () => {
+  const resetPagination = useCallback(() => {
     queryClient.invalidateQueries({
       queryKey: queryKeys.categories.paginated(normalizedSearch, pageSize),
     });
-  };
+  }, [queryClient, normalizedSearch, pageSize]);
 
   // Load more for infinite scroll (if needed)
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Helper methods
   const isEmpty = categories.length === 0 && !isLoading;
@@ -132,7 +133,7 @@ export function useCategoryPagination({
     categories,
     currentPageCategories,
     totalCategories,
-    
+
     // Loading states
     isLoading,
     isFetching,
@@ -140,19 +141,19 @@ export function useCategoryPagination({
     error,
     isEmpty,
     isLoadingMore,
-    
+
     // Pagination state
     hasNextPage,
     hasPreviousPage,
     direction,
-    
+
     // Methods
     goToNextPage,
     goToPreviousPage,
     loadMore,
     resetPagination,
     refetch,
-    
+
     // React Query utilities
     fetchNextPage,
     fetchPreviousPage,
@@ -164,7 +165,7 @@ export function useCategoryPagination({
 /**
  * Simple hook for basic category pagination without infinite scroll.
  * Better for traditional page-by-page navigation.
- * 
+ *
  * @param {Object} options - Hook options
  * @param {number} [options.pageSize=10] - Number of items per page
  * @param {string} [options.searchQuery=""] - Search query for filtering categories
@@ -183,49 +184,52 @@ export function useSimpleCategoryPagination({
   const [autoBackTriggered, setAutoBackTriggered] = useState(false);
   // Cache total categories from first page to show on subsequent pages
   const [cachedTotalCategories, setCachedTotalCategories] = useState(0);
-  
+
   // Normalize search query
   const normalizedSearch = useMemo(() => {
     return searchQuery ? normalizeCategoryName(searchQuery.trim()) : "";
   }, [searchQuery]);
 
-  const {
-    data,
-    error,
-    isFetching,
-    isLoading,
-    isError,
-    refetch,
-  } = useInfiniteQuery({
-    queryKey: [...queryKeys.categories.paginated(normalizedSearch, pageSize), currentCursor, direction],
-    queryFn: ({ pageParam }) => {
-      const cursor = pageParam?.cursor || currentCursor;
-      const queryDirection = pageParam?.direction || direction;
-      
-      return getCategoriesPaginatedApi({
-        cursor,
-        direction: queryDirection,
-        limit: pageSize,
-        search: normalizedSearch,
-      });
-    },
-    initialPageParam: { cursor: currentCursor, direction },
-    getNextPageParam: (lastPage) => {
-      return lastPage?.hasNextPage ? { cursor: lastPage.nextCursor, direction: "forward" } : undefined;
-    },
-    getPreviousPageParam: (firstPage) => {
-      return firstPage?.hasPrevPage ? { cursor: firstPage.prevCursor, direction: "backward" } : undefined;
-    },
-    enabled,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus: false,
-  });
+  const { data, error, isFetching, isLoading, isError, refetch } =
+    useInfiniteQuery({
+      queryKey: [
+        ...queryKeys.categories.paginated(normalizedSearch, pageSize),
+        currentCursor,
+        direction,
+      ],
+      queryFn: ({ pageParam }) => {
+        const cursor = pageParam?.cursor || currentCursor;
+        const queryDirection = pageParam?.direction || direction;
+
+        return getCategoriesPaginatedApi({
+          cursor,
+          direction: queryDirection,
+          limit: pageSize,
+          search: normalizedSearch,
+        });
+      },
+      initialPageParam: { cursor: currentCursor, direction },
+      getNextPageParam: (lastPage) => {
+        return lastPage?.hasNextPage
+          ? { cursor: lastPage.nextCursor, direction: "forward" }
+          : undefined;
+      },
+      getPreviousPageParam: (firstPage) => {
+        return firstPage?.hasPrevPage
+          ? { cursor: firstPage.prevCursor, direction: "backward" }
+          : undefined;
+      },
+      enabled,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+    });
 
   const currentPage = data?.pages?.[0];
   const categories = currentPage?.categories || [];
   const hasNextPage = currentPage?.hasNextPage || false;
-  const hasPreviousPage = pageHistory.length > 0 || currentPage?.hasPrevPage || false;
+  const hasPreviousPage =
+    pageHistory.length > 0 || currentPage?.hasPrevPage || false;
 
   // Cache total categories from first page (when cursor is null) to show on subsequent pages
   useEffect(() => {
@@ -243,15 +247,15 @@ export function useSimpleCategoryPagination({
   const totalCategories = currentPage?.totalCategories || cachedTotalCategories;
 
   // Navigation methods
-  const goToNextPage = () => {
+  const goToNextPage = useCallback(() => {
     if (hasNextPage && currentPage?.nextCursor) {
       setPageHistory((prev) => [...prev, { cursor: currentCursor, direction }]);
       setCurrentCursor(currentPage.nextCursor);
       setDirection("forward");
     }
-  };
+  }, [hasNextPage, currentPage, currentCursor, direction]);
 
-  const goToPreviousPage = () => {
+  const goToPreviousPage = useCallback(() => {
     if (pageHistory.length > 0) {
       const previousPage = pageHistory[pageHistory.length - 1];
       setCurrentCursor(previousPage.cursor);
@@ -261,16 +265,16 @@ export function useSimpleCategoryPagination({
       setCurrentCursor(currentPage.prevCursor);
       setDirection("backward");
     }
-  };
+  }, [pageHistory, currentPage]);
 
   // Reset to first page
-  const resetToFirstPage = () => {
+  const resetToFirstPage = useCallback(() => {
     setCurrentCursor(null);
     setDirection("forward");
     setPageHistory([]);
     setAutoBackTriggered(false); // Reset auto-back flag when resetting pagination
     setCachedTotalCategories(0); // Reset cached total when resetting pagination
-  };
+  }, []);
 
   const isEmpty = categories.length === 0 && !isLoading;
 
@@ -286,25 +290,32 @@ export function useSimpleCategoryPagination({
         setAutoBackTriggered(false);
       }
     }
-  }, [categories.length, hasPreviousPage, isFetching, isLoading, autoBackTriggered, goToPreviousPage]);
+  }, [
+    categories.length,
+    hasPreviousPage,
+    isFetching,
+    isLoading,
+    autoBackTriggered,
+    goToPreviousPage,
+  ]);
 
   return {
     // Data
     categories,
     totalCategories,
-    
+
     // Loading states
     isLoading,
     isFetching,
     isError,
     error,
     isEmpty,
-    
+
     // Pagination state
     hasNextPage,
     hasPreviousPage,
     currentPageNumber: pageHistory.length + 1,
-    
+
     // Methods
     goToNextPage,
     goToPreviousPage,

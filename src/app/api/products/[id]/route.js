@@ -78,7 +78,7 @@ export async function PUT(request, { params }) {
     }
 
     const requestBody = await request.json();
-const validatedData = productUpdateSchema.parse(requestBody);
+    const validatedData = productUpdateSchema.parse(requestBody);
 
     const updatedProduct = await updateProduct(id, validatedData, shop.id);
 

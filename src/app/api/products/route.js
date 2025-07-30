@@ -9,7 +9,7 @@ import prisma from "@/lib/prisma";
 /**
  * Handles GET requests to fetch a paginated list of products for the authenticated user's shop.
  * Uses cursor-based pagination for optimal performance.
- * 
+ *
  * Query Parameters:
  * - cursor: string (optional) - Base64 encoded cursor for pagination
  * - direction: 'forward' | 'backward' (default: 'forward')
@@ -19,7 +19,7 @@ import prisma from "@/lib/prisma";
  * - nameFilter: string (optional)
  * - categoryFilter: string (optional)
  * - enableFuzzySearch: boolean (default: true)
- * 
+ *
  * @param {Request} request
  * @returns {Promise<NextResponse>}
  */
@@ -32,7 +32,7 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    
+
     // Extract cursor pagination parameters
     const cursor = searchParams.get("cursor") || null;
     const direction = searchParams.get("direction") || "forward";
@@ -68,7 +68,9 @@ export async function GET(request) {
     if (!validSortFields.includes(sortBy)) {
       return NextResponse.json(
         {
-          error: `Invalid sortBy. Must be one of: ${validSortFields.join(", ")}`,
+          error: `Invalid sortBy. Must be one of: ${validSortFields.join(
+            ", "
+          )}`,
         },
         { status: 400 }
       );
