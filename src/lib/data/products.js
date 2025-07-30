@@ -5,6 +5,36 @@ import { normalizeProductName } from "@/lib/utils";
 import { fuzzySearchProducts, simpleSearchProducts } from "./products-search";
 
 /**
+ * Unified search orchestrator that decides which search strategy to use
+ * and returns product IDs for further processing.
+ * @param {string} shopId - Shop ID to filter by
+ * @param {string} nameFilter - Search query
+ * @param {boolean} enableFuzzySearch - Whether fuzzy search is enabled
+ * @param {number} maxResults - Maximum results to return
+ * @returns {Promise<Array>} Array of matching products
+ */
+async function orchestrateProductSearch(
+  shopId,
+  nameFilter,
+  enableFuzzySearch = true,
+  maxResults = 50
+) {
+  const trimmedNameFilter = nameFilter ? nameFilter.trim() : "";
+
+  if (!trimmedNameFilter) {
+    return [];
+  }
+
+  // Use fuzzy search for meaningful queries when enabled
+  if (enableFuzzySearch && trimmedNameFilter.length >= 2) {
+    return await fuzzySearchProducts(trimmedNameFilter, shopId, maxResults);
+  }
+
+  // Fallback to simple search for short queries or when fuzzy search is disabled
+  return await simpleSearchProducts(trimmedNameFilter, shopId, maxResults);
+}
+
+/**
  * Creates a regex pattern for character subsequence matching.
  * For "p1" → creates pattern to match "product-1" by checking if 'p' and '1' appear in order.
  * @param {string} query - The search query
@@ -430,10 +460,6 @@ export async function getProductsByShopIdCursor(
     const actualDirection =
       direction === "backward" ? reverseOrder(orderBy) : orderBy;
 
-    // Determine if we have active filters
-    const hasFilters =
-      trimmedNameFilter || (categoryFilter && categoryFilter.trim());
-
     const [products, filteredCount, totalProducts] = await Promise.all([
       prisma.product.findMany({
         where: whereClause,
@@ -457,10 +483,12 @@ export async function getProductsByShopIdCursor(
             }),
         },
       }),
-      // Get total unfiltered count (for "showing X of Y" display)
-      prisma.product.count({
-        where: { shopId },
-      }),
+      // Only get total unfiltered count on the first page load for efficiency
+      cursor
+        ? Promise.resolve(null) // Return null if not the first page
+        : prisma.product.count({
+            where: { shopId },
+          }),
     ]);
 
     // Handle backward pagination (reverse the results)

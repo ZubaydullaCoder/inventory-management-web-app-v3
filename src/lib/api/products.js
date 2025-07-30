@@ -129,6 +129,7 @@ export async function getProductsCursorApi({
   enableFuzzySearch = true,
 }) {
   const params = new URLSearchParams({
+    pagination: "cursor",
     limit: limit.toString(),
     direction,
   });
@@ -141,7 +142,7 @@ export async function getProductsCursorApi({
   if (enableFuzzySearch !== undefined)
     params.append("enableFuzzySearch", enableFuzzySearch.toString());
 
-  const response = await fetch(`/api/products/cursor?${params.toString()}`);
+  const response = await fetch(`/api/products?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch products with cursor pagination");

@@ -311,39 +311,24 @@ export async function fuzzySearchProducts(query, shopId, maxResults = 50) {
   const results = new Map(); // Use Map to handle deduplication by product ID
 
   try {
-    // Execute all strategies in parallel for performance
-    const [
-      exactResults,
-      prefixResults,
-      substringResults,
-      acronymResults,
-      trigramResults,
-      levenshteinResults,
-    ] = await Promise.all([
-      exactMatch(normalizedQuery, shopId),
-      prefixMatch(normalizedQuery, shopId),
-      substringMatch(normalizedQuery, shopId),
-      acronymMatch(normalizedQuery, shopId),
-      trigramMatch(normalizedQuery, shopId),
-      levenshteinMatch(normalizedQuery, shopId),
-    ]);
-
-    // Combine results with strategy prioritization
-    // Higher priority strategies will override lower ones for same product
-    const allStrategies = [
-      { results: levenshteinResults, priority: 1 },
-      { results: trigramResults, priority: 2 },
-      { results: acronymResults, priority: 3 },
-      { results: substringResults, priority: 4 },
-      { results: prefixResults, priority: 5 },
-      { results: exactResults, priority: 6 }, // Highest priority
+    const searchStrategies = [
+      { strategy: exactMatch, priority: 6 },
+      { strategy: prefixMatch, priority: 5 },
+      { strategy: substringMatch, priority: 4 },
+      { strategy: acronymMatch, priority: 3 },
+      { strategy: trigramMatch, priority: 2 },
+      { strategy: levenshteinMatch, priority: 1 },
     ];
 
-    // Process results in priority order (lowest priority first)
-    allStrategies.forEach(({ results: strategyResults, priority }) => {
+    for (const { strategy, priority } of searchStrategies) {
+      if (results.size >= maxResults) {
+        break; // Stop if we have enough results
+      }
+
+      const strategyResults = await strategy(normalizedQuery, shopId, maxResults);
+
       strategyResults.forEach((product) => {
-        const existing = results.get(product.id);
-        if (!existing || existing.priority < priority) {
+        if (!results.has(product.id)) {
           results.set(product.id, {
             ...product,
             priority,
@@ -364,7 +349,7 @@ export async function fuzzySearchProducts(query, shopId, maxResults = 50) {
           });
         }
       });
-    });
+    }
 
     // Convert to array, sort by priority and score, then limit results
     return Array.from(results.values())

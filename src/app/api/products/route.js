@@ -3,11 +3,19 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { productCreateSchema } from "@/lib/zod-schemas";
-import { createProduct, getProductsByShopId } from "@/lib/data/products";
+import { createProduct, getProductsByShopId, getProductsByShopIdCursor } from "@/lib/data/products";
 import prisma from "@/lib/prisma";
 
 /**
  * Handles GET requests to fetch a paginated list of products for the authenticated user's shop.
+ * Supports both offset-based and cursor-based pagination based on the 'pagination' query parameter.
+ * 
+ * Query Parameters:
+ * - pagination: 'cursor' for cursor-based pagination, otherwise uses offset-based
+ * - For offset pagination: page, limit
+ * - For cursor pagination: cursor, direction, limit
+ * - Common: sortBy, sortOrder, nameFilter, categoryFilter, enableFuzzySearch
+ * 
  * @param {Request} request
  * @returns {Promise<NextResponse>}
  */
@@ -15,42 +23,95 @@ export async function GET(request) {
   try {
     const session = await auth();
 
-    if (!session?.user?.id) {
+    if (!session?.user?.shopId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const shop = await prisma.shop.findUnique({
-      where: { ownerId: session.user.id },
-    });
-    if (!shop) {
+    const { searchParams } = new URL(request.url);
+    
+    // Determine pagination strategy
+    const paginationType = searchParams.get("pagination");
+    const useCursorPagination = paginationType === "cursor";
+
+    // Extract common parameters
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    const nameFilter = searchParams.get("nameFilter") || "";
+    const categoryFilter = searchParams.get("categoryFilter") || "";
+    const enableFuzzySearch = searchParams.get("enableFuzzySearch") !== "false";
+
+    // Validate sort parameters
+    const validSortFields = [
+      "createdAt",
+      "name",
+      "sellingPrice",
+      "purchasePrice",
+      "stock",
+      "category",
+    ];
+    if (!validSortFields.includes(sortBy)) {
       return NextResponse.json(
-        { error: "Shop not found for user" },
-        { status: 404 }
+        {
+          error: `Invalid sortBy. Must be one of: ${validSortFields.join(", ")}`,
+        },
+        { status: 400 }
       );
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    if (!["asc", "desc"].includes(sortOrder)) {
+      return NextResponse.json(
+        { error: "Invalid sortOrder. Must be 'asc' or 'desc'" },
+        { status: 400 }
+      );
+    }
 
-    // Extract sorting parameters
-    const sortBy = searchParams.get("sortBy") || "createdAt";
-    const sortOrder = searchParams.get("sortOrder") || "desc";
+    let paginatedData;
 
-    // Extract filtering parameters
-    const nameFilter = searchParams.get("nameFilter") || "";
-    const categoryFilter = searchParams.get("categoryFilter") || "";
-    const enableFuzzySearch = searchParams.get("enableFuzzySearch") !== "false"; // Default to true
+    if (useCursorPagination) {
+      // Extract cursor-specific parameters
+      const cursor = searchParams.get("cursor") || null;
+      const direction = searchParams.get("direction") || "forward";
+      const limit = Math.min(
+        parseInt(searchParams.get("limit") || "10", 10),
+        100
+      );
 
-    const paginatedData = await getProductsByShopId(shop.id, {
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-      nameFilter,
-      categoryFilter,
-      enableFuzzySearch,
-    });
+      // Validate direction parameter
+      if (!["forward", "backward"].includes(direction)) {
+        return NextResponse.json(
+          { error: "Invalid direction. Must be 'forward' or 'backward'" },
+          { status: 400 }
+        );
+      }
+
+      paginatedData = await getProductsByShopIdCursor(session.user.shopId, {
+        cursor,
+        direction,
+        limit,
+        sortBy,
+        sortOrder,
+        nameFilter,
+        categoryFilter,
+        enableFuzzySearch,
+      });
+    } else {
+      // Extract offset-specific parameters
+      const page = parseInt(searchParams.get("page") || "1", 10);
+      const limit = Math.min(
+        parseInt(searchParams.get("limit") || "10", 10),
+        100
+      );
+
+      paginatedData = await getProductsByShopId(session.user.shopId, {
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+        nameFilter,
+        categoryFilter,
+        enableFuzzySearch,
+      });
+    }
 
     return NextResponse.json(paginatedData);
   } catch (error) {
