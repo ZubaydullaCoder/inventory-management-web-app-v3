@@ -33,6 +33,7 @@ export default function ProductDisplayList({
     sortOrder: "desc",
     nameFilter: "",
     categoryFilter: "",
+    unitFilter: "",
   };
 
   // STATE MANAGEMENT: Initialize URL-driven state and handlers

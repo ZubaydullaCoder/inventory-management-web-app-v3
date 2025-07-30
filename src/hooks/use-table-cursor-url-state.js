@@ -17,6 +17,7 @@ import { useDebounce } from "use-debounce";
  * @param {string} [defaultState.sortOrder] - Default sort order
  * @param {string} [defaultState.nameFilter] - Default name filter
  * @param {string} [defaultState.categoryFilter] - Default category filter
+ * @param {string} [defaultState.unitFilter] - Default unit filter
  * @returns {Object} Table state and update functions
  */
 export function useTableCursorUrlState(
@@ -28,6 +29,7 @@ export function useTableCursorUrlState(
     sortOrder: "desc",
     nameFilter: "",
     categoryFilter: "",
+    unitFilter: "",
   }
 ) {
   const searchParams = useSearchParams();
@@ -84,6 +86,7 @@ export function useTableCursorUrlState(
   const [localFilters, setLocalFilters] = useState({
     nameFilter: defaultState.nameFilter,
     categoryFilter: defaultState.categoryFilter,
+    unitFilter: defaultState.unitFilter,
   });
 
   // Debounce filter values for API calls (not URL updates)
@@ -92,6 +95,7 @@ export function useTableCursorUrlState(
     localFilters.categoryFilter,
     300
   );
+  const [debouncedUnitFilter] = useDebounce(localFilters.unitFilter, 300);
 
   // Current state combines URL state with local filter state
   const currentState = useMemo(
@@ -99,6 +103,7 @@ export function useTableCursorUrlState(
       ...urlState,
       nameFilter: localFilters.nameFilter,
       categoryFilter: localFilters.categoryFilter,
+      unitFilter: localFilters.unitFilter,
     }),
     [urlState, localFilters]
   );
@@ -118,6 +123,9 @@ export function useTableCursorUrlState(
           : []),
         ...(currentState.categoryFilter
           ? [{ id: "category", value: currentState.categoryFilter.split(",").filter(Boolean) }]
+          : []),
+        ...(currentState.unitFilter
+          ? [{ id: "unit", value: currentState.unitFilter.split(",").filter(Boolean) }]
           : []),
       ],
       cursor: {
@@ -139,9 +147,10 @@ export function useTableCursorUrlState(
       sortOrder: urlState.sortOrder,
       nameFilter: debouncedNameFilter,
       categoryFilter: debouncedCategoryFilter,
+      unitFilter: debouncedUnitFilter,
       enableFuzzySearch: true,
     }),
-    [urlState, debouncedNameFilter, debouncedCategoryFilter]
+    [urlState, debouncedNameFilter, debouncedCategoryFilter, debouncedUnitFilter]
   );
 
   // Update URL with new parameters (debounced for filters)
@@ -216,8 +225,10 @@ export function useTableCursorUrlState(
       const nameFilter = newFilters.find((f) => f.id === "name")?.value || "";
       const categoryFilterValue = newFilters.find((f) => f.id === "category")?.value;
       const categoryFilter = Array.isArray(categoryFilterValue) ? categoryFilterValue.join(",") : categoryFilterValue || "";
+      const unitFilterValue = newFilters.find((f) => f.id === "unit")?.value;
+      const unitFilter = Array.isArray(unitFilterValue) ? unitFilterValue.join(",") : unitFilterValue || "";
 
-      setLocalFilters({ nameFilter, categoryFilter });
+      setLocalFilters({ nameFilter, categoryFilter, unitFilter });
     },
     [tableState.columnFilters]
   );
@@ -226,7 +237,8 @@ export function useTableCursorUrlState(
   useEffect(() => {
     if (
       debouncedNameFilter !== localFilters.nameFilter ||
-      debouncedCategoryFilter !== localFilters.categoryFilter
+      debouncedCategoryFilter !== localFilters.categoryFilter ||
+      debouncedUnitFilter !== localFilters.unitFilter
     ) {
       // Only reset if we currently have a cursor
       if (urlState.cursor) {
@@ -239,8 +251,10 @@ export function useTableCursorUrlState(
   }, [
     debouncedNameFilter,
     debouncedCategoryFilter,
+    debouncedUnitFilter,
     localFilters.nameFilter,
     localFilters.categoryFilter,
+    localFilters.unitFilter,
     urlState.cursor,
     updateUrl,
   ]);
@@ -259,7 +273,7 @@ export function useTableCursorUrlState(
 
   // Check if any filters are active
   const isFiltered = useMemo(
-    () => Boolean(localFilters.nameFilter || localFilters.categoryFilter),
+    () => Boolean(localFilters.nameFilter || localFilters.categoryFilter || localFilters.unitFilter),
     [localFilters]
   );
 
@@ -268,6 +282,7 @@ export function useTableCursorUrlState(
     setLocalFilters({
       nameFilter: "",
       categoryFilter: "",
+      unitFilter: "",
     });
     updateUrl({
       cursor: null,

@@ -236,6 +236,30 @@ export const productColumns = [
     enableHiding: true,
   },
   {
+    accessorKey: "unit",
+    id: "unit",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Unit" />
+    ),
+    cell: ({ row }) => {
+      const unit = row.original.unit;
+      return (
+        <div className="text-muted-foreground text-sm">
+          {unit || "No Unit"}
+        </div>
+      );
+    },
+    enableSorting: true,
+    enableHiding: true,
+    enableColumnFilter: true, // Enable filtering for this column
+    filterFn: (row, id, value) => {
+      // Custom filter function for unit filtering
+      if (!value || value.length === 0) return true;
+      const unitValue = row.original.unit || "";
+      return value.includes(unitValue);
+    },
+  },
+  {
     accessorKey: "purchasePrice",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Cost" />

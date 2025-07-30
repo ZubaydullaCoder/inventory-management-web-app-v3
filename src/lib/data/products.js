@@ -204,6 +204,7 @@ export async function updateProduct(productId, productData, shopId) {
  *   sortOrder?: string,
  *   nameFilter?: string,
  *   categoryFilter?: string,
+ *   unitFilter?: string,
  *   enableFuzzySearch?: boolean
  * }} options - Cursor pagination and filtering options.
  * @returns {Promise<CursorPaginatedProductsResult>} Products with cursor pagination metadata.
@@ -218,6 +219,7 @@ export async function getProductsByShopIdCursor(
     sortOrder = "desc",
     nameFilter = "",
     categoryFilter = "",
+    unitFilter = "",
     enableFuzzySearch = true,
   }
 ) {
@@ -240,6 +242,7 @@ export async function getProductsByShopIdCursor(
           sortBy,
           sortOrder,
           categoryFilter,
+          unitFilter,
         }
       );
     }
@@ -259,6 +262,12 @@ export async function getProductsByShopIdCursor(
             name: {
               in: categoryFilter.split(",").map(name => name.trim()).filter(Boolean),
             },
+          },
+        }),
+      ...(unitFilter &&
+        unitFilter.trim() && {
+          unit: {
+            in: unitFilter.split(",").map(unit => unit.trim()).filter(unit => unit !== ""),
           },
         }),
     };
@@ -330,6 +339,12 @@ export async function getProductsByShopIdCursor(
                 name: {
                   in: categoryFilter.split(",").map(name => name.trim()).filter(Boolean),
                 },
+              },
+            }),
+          ...(unitFilter &&
+            unitFilter.trim() && {
+              unit: {
+                in: unitFilter.split(",").map(unit => unit.trim()).filter(unit => unit !== ""),
               },
             }),
         },
@@ -526,7 +541,7 @@ function generateCursor(product, sortBy) {
  * @returns {Promise<CursorPaginatedProductsResult>} Paginated fuzzy search results
  */
 async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
-  const { cursor, direction, limit, sortBy, sortOrder, categoryFilter } =
+  const { cursor, direction, limit, sortBy, sortOrder, categoryFilter, unitFilter } =
     options;
 
   // For fuzzy search, we need to get all results first, then apply cursor pagination
@@ -538,12 +553,18 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
     prisma.product.count({ where: { shopId } }),
   ]);
 
-  // Apply category filter if specified
+  // Apply category and unit filters if specified
   let filteredResults = fuzzyResults;
   if (categoryFilter && categoryFilter.trim()) {
     const categoryNames = categoryFilter.split(",").map(name => name.trim()).filter(Boolean);
-    filteredResults = fuzzyResults.filter(
+    filteredResults = filteredResults.filter(
       (product) => categoryNames.includes(product.category?.name || "")
+    );
+  }
+  if (unitFilter && unitFilter.trim()) {
+    const unitNames = unitFilter.split(",").map(unit => unit.trim()).filter(unit => unit !== "");
+    filteredResults = filteredResults.filter(
+      (product) => unitNames.includes(product.unit || "")
     );
   }
 

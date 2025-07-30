@@ -46,6 +46,7 @@ export async function GET(request) {
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const nameFilter = searchParams.get("nameFilter") || "";
     const categoryFilter = searchParams.get("categoryFilter") || "";
+    const unitFilter = searchParams.get("unitFilter") || "";
     const enableFuzzySearch = searchParams.get("enableFuzzySearch") !== "false";
 
     // Validate direction parameter
@@ -91,6 +92,7 @@ export async function GET(request) {
       sortOrder,
       nameFilter,
       categoryFilter,
+      unitFilter,
       enableFuzzySearch,
     });
 
