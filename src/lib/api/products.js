@@ -82,7 +82,7 @@ export async function deleteProductApi(productId) {
 
 /**
  * Fetches products using cursor-based pagination from the API.
- * @param {{cursor?: string, direction?: 'forward'|'backward', limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, unitFilter?: string, enableFuzzySearch?: boolean}} options - Cursor pagination, sorting, and filtering options.
+* @param {{cursor?: string, direction?: 'forward'|'backward', limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, unitFilter?: string, dateRangeFilter?: string, enableFuzzySearch?: boolean}} options - Cursor pagination, sorting, and filtering options.
  * @returns {Promise<import('@/lib/data/products').CursorPaginatedProductsResult>}
  */
 export async function getProductsCursorApi({
@@ -94,6 +94,7 @@ export async function getProductsCursorApi({
   nameFilter,
   categoryFilter,
   unitFilter,
+  dateRangeFilter,
   enableFuzzySearch = true,
 }) {
   const params = new URLSearchParams({
@@ -108,6 +109,10 @@ export async function getProductsCursorApi({
   if (nameFilter) params.append("nameFilter", nameFilter);
   if (categoryFilter) params.append("categoryFilter", categoryFilter);
   if (unitFilter) params.append("unitFilter", unitFilter);
+  if (dateRangeFilter) {
+    console.log('API sending dateRangeFilter:', dateRangeFilter);
+    params.append("dateRangeFilter", dateRangeFilter);
+  }
   if (enableFuzzySearch !== undefined)
     params.append("enableFuzzySearch", enableFuzzySearch.toString());
 

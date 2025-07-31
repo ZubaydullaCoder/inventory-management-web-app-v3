@@ -205,6 +205,7 @@ export async function updateProduct(productId, productData, shopId) {
  *   nameFilter?: string,
  *   categoryFilter?: string,
  *   unitFilter?: string,
+ *   dateRangeFilter?: string,
  *   enableFuzzySearch?: boolean
  * }} options - Cursor pagination and filtering options.
  * @returns {Promise<CursorPaginatedProductsResult>} Products with cursor pagination metadata.
@@ -220,6 +221,7 @@ export async function getProductsByShopIdCursor(
     nameFilter = "",
     categoryFilter = "",
     unitFilter = "",
+    dateRangeFilter = "",
     enableFuzzySearch = true,
   }
 ) {
@@ -243,30 +245,33 @@ export async function getProductsByShopIdCursor(
           sortOrder,
           categoryFilter,
           unitFilter,
+          dateRangeFilter,
         }
       );
     }
 
     // Build where clause for standard filtering
-    const whereClause = {
-      shopId,
-      ...(trimmedNameFilter && {
+    const whereConditions = [ { shopId } ];
+
+    if (trimmedNameFilter) {
+      whereConditions.push({
         name: {
           contains: trimmedNameFilter,
           mode: "insensitive",
         },
-      }),
-      ...(categoryFilter &&
-        categoryFilter.trim() && {
-          category: {
-            name: {
-              in: categoryFilter.split(",").map(name => name.trim()).filter(Boolean),
-            },
-          },
-        }),
-    };
+      });
+    }
 
-    // Handle unit filtering if specified
+    if (categoryFilter && categoryFilter.trim()) {
+      whereConditions.push({
+        category: {
+          name: {
+            in: categoryFilter.split(",").map(name => name.trim()).filter(Boolean),
+          },
+        },
+      });
+    }
+
     if (unitFilter && unitFilter.trim()) {
       const units = unitFilter.split(",").map(u => u.trim());
       const hasNoUnit = units.includes("");
@@ -279,11 +284,38 @@ export async function getProductsByShopIdCursor(
       if (otherUnits.length > 0) {
         unitCondition.push({ unit: { in: otherUnits } });
       }
-
       if (unitCondition.length > 0) {
-        whereClause.OR = whereClause.OR ? [...whereClause.OR, ...unitCondition] : unitCondition;
+        whereConditions.push({ OR: unitCondition });
       }
     }
+
+    if (dateRangeFilter && dateRangeFilter.trim()) {
+      console.log('Date range filter raw:', dateRangeFilter);
+      const [fromTs, toTs] = dateRangeFilter.split(",").map(ts => ts && ts.trim() ? Number(ts.trim()) : null);
+      console.log('Date timestamps:', { fromTs, toTs });
+      
+      if (fromTs && toTs) {
+        // Create date objects and set proper boundaries
+        const fromDate = new Date(fromTs);
+        const toDate = new Date(toTs);
+        // Set toDate to end of day to include the entire day
+        toDate.setHours(23, 59, 59, 999);
+        console.log('Parsed date range:', { fromDate, toDate });
+        whereConditions.push({ createdAt: { gte: fromDate, lte: toDate } });
+      } else if (fromTs) {
+        const fromDate = new Date(fromTs);
+        console.log('Parsed from date:', fromDate);
+        whereConditions.push({ createdAt: { gte: fromDate } });
+      } else if (toTs) {
+        const toDate = new Date(toTs);
+        // Set toDate to end of day to include the entire day
+        toDate.setHours(23, 59, 59, 999);
+        console.log('Parsed to date:', toDate);
+        whereConditions.push({ createdAt: { lte: toDate } });
+      }
+    }
+
+    const whereClause = { AND: whereConditions };
 
     // Build cursor condition for pagination
     const cursorCondition = buildCursorCondition(
@@ -338,43 +370,7 @@ export async function getProductsByShopIdCursor(
       }),
       // Get filtered count (same as current query filters)
       (() => {
-        const countWhereClause = {
-          shopId,
-          ...(trimmedNameFilter && {
-            name: {
-              contains: trimmedNameFilter,
-              mode: "insensitive",
-            },
-          }),
-          ...(categoryFilter &&
-            categoryFilter.trim() && {
-              category: {
-                name: {
-                  in: categoryFilter.split(",").map(name => name.trim()).filter(Boolean),
-                },
-              },
-            }),
-        };
-
-        // Handle unit filtering for count query
-        if (unitFilter && unitFilter.trim()) {
-          const units = unitFilter.split(",").map(u => u.trim());
-          const hasNoUnit = units.includes("");
-          const otherUnits = units.filter(u => u !== "");
-
-          const unitCondition = [];
-          if (hasNoUnit) {
-            unitCondition.push({ unit: null }, { unit: "" });
-          }
-          if (otherUnits.length > 0) {
-            unitCondition.push({ unit: { in: otherUnits } });
-          }
-
-          if (unitCondition.length > 0) {
-            countWhereClause.OR = countWhereClause.OR ? [...countWhereClause.OR, ...unitCondition] : unitCondition;
-          }
-        }
-
+        const countWhereClause = { AND: whereConditions };
         return prisma.product.count({
           where: countWhereClause,
         });
@@ -571,7 +567,7 @@ function generateCursor(product, sortBy) {
  * @returns {Promise<CursorPaginatedProductsResult>} Paginated fuzzy search results
  */
 async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
-  const { cursor, direction, limit, sortBy, sortOrder, categoryFilter, unitFilter } =
+  const { cursor, direction, limit, sortBy, sortOrder, categoryFilter, unitFilter, dateRangeFilter } =
     options;
 
   // For fuzzy search, we need to get all results first, then apply cursor pagination
@@ -602,6 +598,17 @@ async function getCursorPaginatedFuzzySearchResults(shopId, query, options) {
       if (otherUnits.length > 0 && otherUnits.includes(productUnit)) return true;
       return false;
     });
+  }
+
+  if (dateRangeFilter && dateRangeFilter.trim()) {
+    const [from, to] = dateRangeFilter.split(",").map(ts => ts ? new Date(Number(ts)) : null);
+    if (from && to) {
+      filteredResults = filteredResults.filter(p => p.createdAt >= from && p.createdAt <= to);
+    } else if (from) {
+      filteredResults = filteredResults.filter(p => p.createdAt >= from);
+    } else if (to) {
+      filteredResults = filteredResults.filter(p => p.createdAt <= to);
+    }
   }
 
   // Apply sorting if not relevance-based

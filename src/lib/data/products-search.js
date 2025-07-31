@@ -313,11 +313,12 @@ async function levenshteinMatch(
  * - Multi-word "otverka qizil marka a50" → Returns products containing ALL tokens (Stage 1 + Stage 2)
  *
  * @param {string} query - Search query (single or multi-word)
- * @param {string} shopId - Shop ID to filter by
+* @param {string} shopId - Shop ID to filter by
  * @param {number} maxResults - Maximum results to return
+ * @param {string} dateRangeFilter - Date range filter string
  * @returns {Promise<Array>} Ranked search results with match metadata
  */
-export async function fuzzySearchProducts(query, shopId, maxResults = 50) {
+export async function fuzzySearchProducts(query, shopId, maxResults = 50, dateRangeFilter = "") {
   if (!query || query.trim().length === 0) {
     return [];
   }
@@ -381,6 +382,17 @@ export async function fuzzySearchProducts(query, shopId, maxResults = 50) {
       });
     }
     
+    if (dateRangeFilter && dateRangeFilter.trim()) {
+      const [from, to] = dateRangeFilter.split(",").map(ts => ts ? new Date(Number(ts)) : null);
+      if (from && to) {
+        finalResults = finalResults.filter(p => p.createdAt >= from && p.createdAt <= to);
+      } else if (from) {
+        finalResults = finalResults.filter(p => p.createdAt >= from);
+      } else if (to) {
+        finalResults = finalResults.filter(p => p.createdAt <= to);
+      }
+    }
+    
     // Sort by priority and score, then limit results
     return finalResults
       .sort((a, b) => {
@@ -411,10 +423,11 @@ export async function fuzzySearchProducts(query, shopId, maxResults = 50) {
  * Simple product search (fallback for when fuzzy search is not needed)
  * @param {string} query - Search query
  * @param {string} shopId - Shop ID to filter by
- * @param {number} maxResults - Maximum results to return
+* @param {number} maxResults - Maximum results to return
+ * @param {string} dateRangeFilter - Date range filter string
  * @returns {Promise<Array>} Search results
  */
-export async function simpleSearchProducts(query, shopId, maxResults = 50) {
+export async function simpleSearchProducts(query, shopId, maxResults = 50, dateRangeFilter = "") {
   if (!query || query.trim().length === 0) {
     return [];
   }
@@ -448,6 +461,17 @@ export async function simpleSearchProducts(query, shopId, maxResults = 50) {
         p.name
       LIMIT ${maxResults}
     `;
+
+    if (dateRangeFilter && dateRangeFilter.trim()) {
+      const [from, to] = dateRangeFilter.split(",").map(ts => ts ? new Date(Number(ts)) : null);
+      if (from && to) {
+        results = results.filter(p => p.createdAt >= from && p.createdAt <= to);
+      } else if (from) {
+        results = results.filter(p => p.createdAt >= from);
+      } else if (to) {
+        results = results.filter(p => p.createdAt <= to);
+      }
+    }
 
     return results.map((product) => ({
       ...product,

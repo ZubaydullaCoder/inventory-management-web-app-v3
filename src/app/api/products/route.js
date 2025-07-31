@@ -47,6 +47,7 @@ export async function GET(request) {
     const nameFilter = searchParams.get("nameFilter") || "";
     const categoryFilter = searchParams.get("categoryFilter") || "";
     const unitFilter = searchParams.get("unitFilter") || "";
+    const dateRangeFilter = searchParams.get("dateRangeFilter") || "";
     const enableFuzzySearch = searchParams.get("enableFuzzySearch") !== "false";
 
     // Validate direction parameter
@@ -93,6 +94,7 @@ export async function GET(request) {
       nameFilter,
       categoryFilter,
       unitFilter,
+      dateRangeFilter,
       enableFuzzySearch,
     });
 

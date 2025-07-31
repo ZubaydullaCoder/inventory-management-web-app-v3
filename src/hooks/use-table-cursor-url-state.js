@@ -18,6 +18,7 @@ import { useDebounce } from "use-debounce";
  * @param {string} [defaultState.nameFilter] - Default name filter
  * @param {string} [defaultState.categoryFilter] - Default category filter
  * @param {string} [defaultState.unitFilter] - Default unit filter
+ * @param {string} [defaultState.dateRangeFilter] - Default date range filter
  * @returns {Object} Table state and update functions
  */
 export function useTableCursorUrlState(
@@ -30,6 +31,7 @@ export function useTableCursorUrlState(
     nameFilter: "",
     categoryFilter: "",
     unitFilter: "",
+    dateRangeFilter: "",
   }
 ) {
   const searchParams = useSearchParams();
@@ -87,6 +89,7 @@ export function useTableCursorUrlState(
     nameFilter: defaultState.nameFilter,
     categoryFilter: defaultState.categoryFilter,
     unitFilter: defaultState.unitFilter,
+    dateRangeFilter: defaultState.dateRangeFilter,
   });
 
   // Debounce filter values for API calls (not URL updates)
@@ -96,6 +99,7 @@ export function useTableCursorUrlState(
     300
   );
   const [debouncedUnitFilter] = useDebounce(localFilters.unitFilter, 300);
+  const [debouncedDateRangeFilter] = useDebounce(localFilters.dateRangeFilter, 300);
 
   // Current state combines URL state with local filter state
   const currentState = useMemo(
@@ -104,6 +108,7 @@ export function useTableCursorUrlState(
       nameFilter: localFilters.nameFilter,
       categoryFilter: localFilters.categoryFilter,
       unitFilter: localFilters.unitFilter,
+      dateRangeFilter: localFilters.dateRangeFilter,
     }),
     [urlState, localFilters]
   );
@@ -127,6 +132,9 @@ export function useTableCursorUrlState(
         ...(currentState.unitFilter
           ? [{ id: "unit", value: currentState.unitFilter.split(",").filter(Boolean) }]
           : []),
+        ...(currentState.dateRangeFilter
+          ? [{ id: "createdAt", value: currentState.dateRangeFilter.split(",").map(Number).filter(Boolean) }]
+          : []),
       ],
       cursor: {
         value: currentState.cursor,
@@ -148,9 +156,10 @@ export function useTableCursorUrlState(
       nameFilter: debouncedNameFilter,
       categoryFilter: debouncedCategoryFilter,
       unitFilter: debouncedUnitFilter,
+      dateRangeFilter: debouncedDateRangeFilter,
       enableFuzzySearch: true,
     }),
-    [urlState, debouncedNameFilter, debouncedCategoryFilter, debouncedUnitFilter]
+    [urlState, debouncedNameFilter, debouncedCategoryFilter, debouncedUnitFilter, debouncedDateRangeFilter]
   );
 
   // Update URL with new parameters (debounced for filters)
@@ -228,7 +237,10 @@ export function useTableCursorUrlState(
       const unitFilterValue = newFilters.find((f) => f.id === "unit")?.value;
       const unitFilter = Array.isArray(unitFilterValue) ? unitFilterValue.join(",") : unitFilterValue || "";
 
-      setLocalFilters({ nameFilter, categoryFilter, unitFilter });
+      const dateRangeFilterValue = newFilters.find((f) => f.id === "createdAt")?.value;
+      const dateRangeFilter = Array.isArray(dateRangeFilterValue) ? dateRangeFilterValue.join(",") : dateRangeFilterValue || "";
+
+      setLocalFilters({ nameFilter, categoryFilter, unitFilter, dateRangeFilter });
     },
     [tableState.columnFilters]
   );
@@ -238,7 +250,8 @@ export function useTableCursorUrlState(
     if (
       debouncedNameFilter !== localFilters.nameFilter ||
       debouncedCategoryFilter !== localFilters.categoryFilter ||
-      debouncedUnitFilter !== localFilters.unitFilter
+      debouncedUnitFilter !== localFilters.unitFilter ||
+      debouncedDateRangeFilter !== localFilters.dateRangeFilter
     ) {
       // Only reset if we currently have a cursor
       if (urlState.cursor) {
@@ -252,9 +265,11 @@ export function useTableCursorUrlState(
     debouncedNameFilter,
     debouncedCategoryFilter,
     debouncedUnitFilter,
+    debouncedDateRangeFilter,
     localFilters.nameFilter,
     localFilters.categoryFilter,
     localFilters.unitFilter,
+    localFilters.dateRangeFilter,
     urlState.cursor,
     updateUrl,
   ]);
@@ -273,7 +288,7 @@ export function useTableCursorUrlState(
 
   // Check if any filters are active
   const isFiltered = useMemo(
-    () => Boolean(localFilters.nameFilter || localFilters.categoryFilter || localFilters.unitFilter),
+    () => Boolean(localFilters.nameFilter || localFilters.categoryFilter || localFilters.unitFilter || localFilters.dateRangeFilter),
     [localFilters]
   );
 
@@ -283,6 +298,7 @@ export function useTableCursorUrlState(
       nameFilter: "",
       categoryFilter: "",
       unitFilter: "",
+      dateRangeFilter: "",
     });
     updateUrl({
       cursor: null,

@@ -299,6 +299,33 @@ export const productColumns = [
     },
     enableSorting: true,
     enableHiding: true,
+    enableColumnFilter: true, // Enable filtering for this column
+    filterFn: (row, id, value) => {
+      // Custom filter function for date range filtering
+      if (!value || !Array.isArray(value) || value.length === 0) return true;
+      
+      const rowDate = new Date(row.getValue(id));
+      const rowTimestamp = rowDate.getTime();
+      
+      const [fromTimestamp, toTimestamp] = value;
+      
+      // If only 'from' date is provided
+      if (fromTimestamp && !toTimestamp) {
+        return rowTimestamp >= fromTimestamp;
+      }
+      
+      // If only 'to' date is provided
+      if (!fromTimestamp && toTimestamp) {
+        return rowTimestamp <= toTimestamp;
+      }
+      
+      // If both dates are provided
+      if (fromTimestamp && toTimestamp) {
+        return rowTimestamp >= fromTimestamp && rowTimestamp <= toTimestamp;
+      }
+      
+      return true;
+    },
   },
   {
     id: "actions",

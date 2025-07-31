@@ -47,7 +47,7 @@ export function useCheckProductName(
 /**
  * Hook to fetch products using cursor-based pagination with TanStack Query.
  * Better performance for large datasets compared to offset-based pagination.
-* @param {{cursor?: string, direction?: 'forward'|'backward', limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, unitFilter?: string, enableFuzzySearch?: boolean}} options - Cursor pagination, sorting, and filtering options.
+* @param {{cursor?: string, direction?: 'forward'|'backward', limit?: number, sortBy?: string, sortOrder?: string, nameFilter?: string, categoryFilter?: string, unitFilter?: string, dateRangeFilter?: string, enableFuzzySearch?: boolean}} options - Cursor pagination, sorting, and filtering options.
  * @returns {Object} TanStack Query result object.
  */
 export function useGetProductsCursor(options = {}) {
@@ -60,6 +60,7 @@ export function useGetProductsCursor(options = {}) {
     nameFilter,
     categoryFilter,
     unitFilter,
+    dateRangeFilter,
     enableFuzzySearch = true,
   } = options;
 
@@ -73,6 +74,7 @@ export function useGetProductsCursor(options = {}) {
       nameFilter,
       categoryFilter,
       unitFilter,
+      dateRangeFilter,
       enableFuzzySearch,
     }),
     queryFn: () =>
@@ -85,6 +87,7 @@ export function useGetProductsCursor(options = {}) {
         nameFilter,
         categoryFilter,
         unitFilter,
+        dateRangeFilter,
         enableFuzzySearch,
       }),
     staleTime: 2 * 60 * 1000, // 2 minutes - products change frequently

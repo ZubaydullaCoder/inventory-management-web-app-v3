@@ -8,6 +8,7 @@ import { DataTableViewOptions } from "@/components/ui/data-table-view-options";
 import { cn } from "@/lib/utils";
 import { ProductCategoryFilter } from "@/components/features/products/display/product-category-filter";
 import { ProductUnitFilter } from "@/components/features/products/display/product-unit-filter";
+import { ProductDateFilter } from "@/components/features/products/display/product-date-filter";
 
 /**
  * Toolbar component for data tables with search and filter functionality.
@@ -44,6 +45,12 @@ export function DataTableToolbar({ table, className, children, bulkActionsCompon
           <ProductUnitFilter
             column={table.getColumn("unit")}
             title="Unit"
+          />
+        )}
+        {table.getColumn("createdAt") && (
+          <ProductDateFilter
+            column={table.getColumn("createdAt")}
+            title="Date Range"
           />
         )}
         {isFiltered && (
