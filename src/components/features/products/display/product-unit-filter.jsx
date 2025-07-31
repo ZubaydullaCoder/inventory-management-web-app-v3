@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, PlusCircle } from "lucide-react";
+import { Check, PlusCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,15 +20,19 @@ export function ProductUnitFilter({ column, title }) {
   const { unitOptions, isLoading, error, hasUnits } = useUnitsForFiltering();
 
   const selectedValues = new Set(column?.getFilterValue() || []);
-
-  if (isLoading || error || !hasUnits) {
-    return null; // Don't render the filter if there are no units or if there's an error
-  }
+  
+  // Determine if the filter should be disabled
+  const isDisabled = isLoading || error || !hasUnits;
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-dashed">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 border-dashed" 
+          disabled={isDisabled}
+        >
           <PlusCircle className="mr-2 h-4 w-4" />
           {title}
           {selectedValues.size > 0 && (
@@ -62,47 +66,64 @@ export function ProductUnitFilter({ column, title }) {
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
-          <CommandInput placeholder={title} />
+          <CommandInput placeholder={title} disabled={isDisabled} />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {unitOptions.map((option) => {
-                const isSelected = selectedValues.has(option.value);
-                return (
-                  <CommandItem
-                    key={option.value}
-                    onSelect={() => {
-                      if (isSelected) {
-                        selectedValues.delete(option.value);
-                      } else {
-                        selectedValues.add(option.value);
-                      }
-                      const filterValues = Array.from(selectedValues);
-                      column?.setFilterValue(
-                        filterValues.length ? filterValues : undefined
-                      );
-                    }}
-                  >
-                    <div
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "opacity-50 [&_svg]:invisible"
-                      )}
-                    >
-                      <Check className={cn("h-4 w-4")} />
-                    </div>
-                    <span>{option.label}</span>
-                    {option.count !== undefined && (
-                      <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
-                        {option.count}
-                      </span>
-                    )}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
+            {isLoading ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-sm text-muted-foreground">Loading units...</span>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center p-4">
+                <span className="text-sm text-muted-foreground">Failed to load units</span>
+              </div>
+            ) : !hasUnits ? (
+              <div className="flex items-center justify-center p-4">
+                <span className="text-sm text-muted-foreground">No units available</span>
+              </div>
+            ) : (
+              <>
+                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandGroup>
+                  {unitOptions.map((option) => {
+                    const isSelected = selectedValues.has(option.value);
+                    return (
+                      <CommandItem
+                        key={option.value}
+                        onSelect={() => {
+                          if (isSelected) {
+                            selectedValues.delete(option.value);
+                          } else {
+                            selectedValues.add(option.value);
+                          }
+                          const filterValues = Array.from(selectedValues);
+                          column?.setFilterValue(
+                            filterValues.length ? filterValues : undefined
+                          );
+                        }}
+                      >
+                        <div
+                          className={cn(
+                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}
+                        >
+                          <Check className={cn("h-4 w-4")} />
+                        </div>
+                        <span>{option.label}</span>
+                        {option.count !== undefined && (
+                          <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                            {option.count}
+                          </span>
+                        )}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </>
+            )}
             {selectedValues.size > 0 && (
               <>
                 <CommandSeparator />
